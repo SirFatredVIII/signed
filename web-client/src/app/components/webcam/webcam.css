@@ -1,0 +1,20 @@
+.webcam-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.webcam-video {
+    width: 100%;
+    border-radius: 10px;
+}
+
+.preview-img {
+    width: 100%;
+    border-radius: 10px;
+}
+
+.webcam-canvas {
+    display: none;
+}

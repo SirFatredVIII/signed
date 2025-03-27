@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react";
 import { HomePage } from "./home_page";
+import { PracticePage } from "./practice_page";
 
 export default function PageSwitcher() {
 
@@ -9,7 +10,7 @@ export default function PageSwitcher() {
     return (
       <>
           {page == "home" && <HomePage setPage={setPage}/>}
-          {page == "practice" && <p>womp womp</p>}
+          {page == "practice" && <PracticePage/>}
       </>
     );
 }

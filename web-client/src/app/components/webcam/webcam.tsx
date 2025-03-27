@@ -8,6 +8,8 @@ const Webcam = () => {
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
+  const [message, setMessage] = useState<string | null>(null);
+
   const startWebcam = async () => {
     if (videoRef.current && canvasRef.current) {
       try {
@@ -22,10 +24,22 @@ const Webcam = () => {
     }
   };
 
-  const stopWebcam = () => {
+  const stopWebcam = async () => {
     if (mediaStream) {
       mediaStream.getTracks().forEach((track) => track.stop());
       setMediaStream(null);
+    }
+    const res = await fetch("http://localhost:5002/predict", {
+      method: "POST",
+      body: JSON.stringify({ image: capturedImage }),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+      },
+    });
+    if (res.ok) {
+      const text = await res.text();
+      const message = JSON.parse(text);
+      setMessage(message.message);
     }
   };
 
@@ -43,7 +57,6 @@ const Webcam = () => {
         context.drawImage(video, 0, 0);
         // Get image data URL from canvas
         setCapturedImage(canvas.toDataURL("image/png"));
-        stopWebcam();
       }
     }
   };
@@ -81,6 +94,7 @@ const Webcam = () => {
           )}
         </>
       )}
+      <p>{message}</p>
     </div>
   );
 };

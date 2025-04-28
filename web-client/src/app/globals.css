@@ -12,6 +12,11 @@
   --font-mono: var(--font-geist-mono);
 }
 
+@theme {
+  --color-signed-light-blue: #b8cdf8;
+  --color-signed-blue: #1768ac;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;

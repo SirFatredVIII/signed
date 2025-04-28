@@ -4,9 +4,7 @@
 export default function FooterBar() {
     return (
         <>
-            <div className="bg-sky-600 w-full h-15 absolute bottom-0 left-0">
-
-            </div>
+            <div className="bg-signed-blue w-full h-15 absolute bottom-0 left-0"></div>
         </>
     )
 }

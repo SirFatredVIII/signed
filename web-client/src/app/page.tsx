@@ -1,8 +1,5 @@
-import PageSwitcher from "./components/page/page_switcher";
+import PageSwitcher from "./page_switcher";
 
 export default function Home() {
-
-  return (
-    <PageSwitcher/>
-  );
+  return <PageSwitcher />;
 }

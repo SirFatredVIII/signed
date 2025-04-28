@@ -1,6 +1,6 @@
 import { Button } from "@mui/material";
 import { Dispatch, SetStateAction, useState } from "react";
-import Webcam from "../webcam/webcam";
+import Webcam from "../../components/webcam/webcam";
 
 interface HomePageProps {}
 

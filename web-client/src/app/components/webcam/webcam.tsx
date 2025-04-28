@@ -1,4 +1,7 @@
+"use client";
+import { classifySign } from "@/app/actions/model.action";
 import { Button } from "@mui/material";
+import Image from "next/image";
 import { useRef, useState } from "react";
 
 const Webcam = () => {
@@ -28,18 +31,14 @@ const Webcam = () => {
     if (mediaStream) {
       mediaStream.getTracks().forEach((track) => track.stop());
       setMediaStream(null);
+      videoRef.current = null;
     }
-    const res = await fetch("http://localhost:5002/predict", {
-      method: "POST",
-      body: JSON.stringify({ image: capturedImage }),
-      headers: {
-        "Content-type": "application/json; charset=UTF-8",
-      },
-    });
-    if (res.ok) {
-      const text = await res.text();
-      const message = JSON.parse(text);
-      setMessage(message.message);
+    try {
+      const blob = await (await fetch(capturedImage!)).blob();
+      const result = await classifySign(blob);
+      setMessage(result.message);
+    } catch (e) {
+      console.error("Error classifying sign:", e);
     }
   };
 
@@ -54,7 +53,7 @@ const Webcam = () => {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         // Draw video frame onto canvas
-        context.drawImage(video, 0, 0);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
         // Get image data URL from canvas
         setCapturedImage(canvas.toDataURL("image/png"));
       }
@@ -70,7 +69,13 @@ const Webcam = () => {
     <div className="webcam-container flex flex-col items-center justify-center">
       {capturedImage ? (
         <>
-          <img src={capturedImage} alt="Captured" className="preview-img" />
+          <Image
+            src={capturedImage}
+            alt="Captured"
+            height={canvasRef.current?.height}
+            width={canvasRef.current?.width}
+            className="preview-img"
+          />
           <Button onClick={resetState} variant="contained" color="warning">
             Reset
           </Button>
@@ -79,7 +84,7 @@ const Webcam = () => {
         <>
           <video ref={videoRef} autoPlay muted className="webcam-video" />
           <canvas ref={canvasRef} className="webcam-canvas" />
-          {!videoRef.current ? (
+          {!mediaStream ? (
             <Button onClick={startWebcam} variant="contained" color="primary">
               Start Webcam
             </Button>

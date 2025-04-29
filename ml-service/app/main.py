@@ -8,7 +8,7 @@ from PIL import Image
 import io
 import numpy as np
 
-model = tf.keras.models.load_model('app/sign_language_model.keras')
+model = tf.keras.models.load_model('app/keras_classifier/sign_language_model.keras')
 
 app = FastAPI()
 

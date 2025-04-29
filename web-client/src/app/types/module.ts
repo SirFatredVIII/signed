@@ -9,4 +9,5 @@ export type Module = {
     skillLevel: string;
     prereq: number[];
     signs: number[];
+    description: string;
 }

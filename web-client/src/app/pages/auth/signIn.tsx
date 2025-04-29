@@ -6,6 +6,7 @@ import { RetrieveUser } from "@/app/accessors/users.accessor";
 import { hashSync } from "bcrypt-ts";
 import { secret } from "./secret_salt";
 import { IForm } from "./signUp";
+import { User } from "@/app/types/user";
 
 /**
  * Simple sign in component used to sign in a user to our service using their firebase credentials.
@@ -61,7 +62,7 @@ export const SignIn = () => {
                 raiseError(true);
             } else {
                 raiseError(false);
-                setState({...state, currentPage: "learn", currentUser: user.email});
+                setState({...state, currentPage: "learn", currentUser: user as User});
             }
         });
     }

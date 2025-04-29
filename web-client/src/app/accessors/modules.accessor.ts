@@ -16,7 +16,8 @@ const docToModule = (document: DocumentData) => {
         name: document.name,
         skillLevel: document.skillLevel,
         prereq: document.prereq,
-        signs: document.signs
+        signs: document.signs,
+        description: document.description
     }
     return moduleToReturn;
 }

@@ -15,6 +15,9 @@
 @theme {
   --color-signed-light-blue: #b8cdf8;
   --color-signed-blue: #1768ac;
+  --color-signed-dark-blue: #0F426C;
+  --color-signed-darker-blue: #0C375A;
+  --color-signed-darkest-blue: #051624;
 }
 
 @media (prefers-color-scheme: dark) {

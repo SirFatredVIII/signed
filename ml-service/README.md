@@ -12,9 +12,9 @@ First, navigate to the correct folder and create a virtual environment:
 
 ```bash
 cd ml-service
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r app/keras_classifier/requirements.txt
 ```
 
 To make the ML service executable and run it:

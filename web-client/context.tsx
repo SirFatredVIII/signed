@@ -6,7 +6,7 @@ interface ClientState {
 }
 
 const initialState: ClientState = {
-    currentPage: "signup",
+    currentPage: "practice",
     currentUser: "na"
 }
 
@@ -18,6 +18,6 @@ interface IStateContext {
 export const StateContext = React.createContext<IStateContext>(
     {
         state: initialState,
-        setState: () => {}
+        setState: () => { }
     }
 );

@@ -3,11 +3,13 @@ import React, { Dispatch, SetStateAction } from "react";
 interface ClientState {
     currentPage: string;
     currentUser: string;
+    modulePanelOpen: boolean;
 }
 
 const initialState: ClientState = {
-    currentPage: "signup",
-    currentUser: "na"
+    currentPage: "learn",
+    currentUser: "na",
+    modulePanelOpen: false
 }
 
 interface IStateContext {

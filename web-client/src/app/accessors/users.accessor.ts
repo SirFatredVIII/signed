@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
+import { collection, doc, DocumentData, getDoc, getDocs, getFirestore, query, QueryDocumentSnapshot, setDoc, where } from "firebase/firestore";
 import { config } from "../../../configuration";
 import { hashSync } from "bcrypt-ts";
 import { secret } from "../pages/auth/secret_salt";
@@ -11,6 +11,8 @@ import { secret } from "../pages/auth/secret_salt";
  */
 const hashPassword = (password: string) => {return hashSync(password, secret)};
 
+const database = getFirestore(config);
+
 /**
  * Accesses the firebase to create a brand new user in the Users document. 
  * @param username the username of the profile to add
@@ -19,7 +21,6 @@ const hashPassword = (password: string) => {return hashSync(password, secret)};
  * @param email the new profile's email address
  */
 export const CreateNewUser = async (username: string, newId: number, password: string, email: string) => {
-    const database = getFirestore(config);
 
     return setDoc(doc(collection(database, "users"), username + "_" + newId), {
         id: newId,
@@ -42,4 +43,20 @@ export const CreateNewUser = async (username: string, newId: number, password: s
             write_modules: false
         },                    
     });
+}
+
+/**
+ * Retrieves a particular user from the firebase.
+ * @param email the email of the user to retrieve
+ */
+export const RetrieveUser = async (email: string) => {
+    const q = query(collection(database, "users"), where("email", "==", email));
+
+    const docs: DocumentData[] = []
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach((doc) => {
+      docs.push(doc.data());
+    });
+    return docs[0];
+
 }

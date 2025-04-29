@@ -4,16 +4,14 @@ interface InputButtonProps {
     color: string;
     label: string;
     callback: (_: BaseSyntheticEvent<object, any, any>) => void;
+    disabled: boolean;
 }
 
 /**
  * A simple wrapper for a button that looks quite pleasant.
  */
-export const InputButton: React.FC<InputButtonProps> = ({color, label, callback}) => {
+export const InputButton: React.FC<InputButtonProps> = ({color, label, callback, disabled}) => {
 
-    let background = "";
-    let text = ""
-    let hover = ""
     let newColors = "";
     switch (color) {
         case "indigo":
@@ -27,9 +25,19 @@ export const InputButton: React.FC<InputButtonProps> = ({color, label, callback}
             break;
     }
 
+    if (disabled) {
+        newColors = "bg-slate-400 text-slate-900 hover:cursor-not-allowed" 
+    }
+
+    const callbackWrapper = (_: BaseSyntheticEvent) => {
+        if (!disabled) {
+            callback(_)
+        }
+    }
+
     return (
         <div className="grid justify-center mb-5 w-10vw">
-            <button className={"rounded-xl pt-2 pb-2 pl-5 pr-5 outline-0 outline-signed-dark-blue " + newColors} onClick={callback}>{label}</button>
+            <button className={"rounded-xl pt-2 pb-2 pl-5 pr-5 outline-0 outline-signed-dark-blue " + newColors} onClick={callbackWrapper} disabled={disabled}>{label}</button>
         </div>
     )
 }

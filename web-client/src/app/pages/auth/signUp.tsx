@@ -1,15 +1,11 @@
 import { InputButton } from "@/app/components/input/button";
 import { InputForm } from "@/app/components/input/form";
-import { BaseSyntheticEvent, useContext, useEffect, useState } from "react"
+import { BaseSyntheticEvent, useContext, useState } from "react"
 import { StateContext } from "../../../../context";
-import { genSaltSync, hashSync, compareSync } from "bcrypt-ts";
-import { collection, doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
-import { config } from "../../../../configuration";
-import { secret } from "./secret_salt";
 import { IncrementHighestId, RetrieveHighestId } from "@/app/accessors/metadata.accessor";
 import { CreateNewUser } from "@/app/accessors/users.accessor";
 
-interface IForm {
+export interface IForm {
     type: "text" | "email" | "password", 
     label: string, 
     value: string, 
@@ -30,10 +26,9 @@ export const SignUp = () => {
     const [confirmEmail, setConfirmEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-
-    const {state, setState} = useContext(StateContext);
-
     const [triedSignUp, setTriedSignUp] = useState(false);
+
+    const { state, setState } = useContext(StateContext);
     
     /**
      * A list of all input forms that make up the sign-up sheet. Should be quite exapandable if we ever need more.
@@ -118,8 +113,7 @@ export const SignUp = () => {
      * Event handler designed to renavigate to the sign in page.
      */
     const handleSignIn = () => {
-        // setState({...state, currentPage: "signIn"});
-        handleSignUp();
+        setState({...state, currentPage: "signIn"});
     }
 
     /**
@@ -134,9 +128,7 @@ export const SignUp = () => {
         allForms.forEach((form) => {
             if (form.errorCondition()) {
                 errorFound = true;
-
                 let newForm = {...form, error: true};
-
                 newForms.push(newForm);
             } else {
                 newForms.push(form);
@@ -149,8 +141,7 @@ export const SignUp = () => {
         } else {
                 // after creating the new player, update the metadata of what the "highest id" is, then once that's all done,
                 // we can move on to the sign in page.
-                RetrieveHighestId().then((data) => {
-                    const highestId: number = data.data()?.highest_id + 1;
+                RetrieveHighestId().then((highestId) => {
                     CreateNewUser(username, highestId, password, email).then(() => {
                         IncrementHighestId(highestId).then(() => {
                             setState({...state, currentPage: "signIn"});
@@ -182,7 +173,7 @@ export const SignUp = () => {
                         {
                             currentForms.map((form) => {
                                 return (
-                                    <InputForm type={form.type} label={form.label} callback={form.handler} value={form.value} key={form.label} errorMessage={form.errorMessage} isError={form.error}/>
+                                    <InputForm type={form.type} label={form.label} handler={form.handler} value={form.value} key={form.label} errorMessage={form.errorMessage} error={form.error} errorCondition={form.errorCondition}/>
                                 )
                             })
                         }

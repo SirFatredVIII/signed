@@ -7,7 +7,7 @@ interface ClientState {
 }
 
 const initialState: ClientState = {
-    currentPage: "learn",
+    currentPage: "signup",
     currentUser: "na",
     modulePanelOpen: false
 }

@@ -61,7 +61,7 @@ export const SignIn = () => {
                 raiseError(true);
             } else {
                 raiseError(false);
-                setState({...state, currentPage: "practice", currentUser: user.email});
+                setState({...state, currentPage: "learn", currentUser: user.email});
             }
         });
     }

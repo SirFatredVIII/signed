@@ -113,7 +113,7 @@ export const SignUp = () => {
      * Event handler designed to renavigate to the sign in page.
      */
     const handleSignIn = () => {
-        setState({...state, currentPage: "signIn"});
+        setState({...state, currentPage: "signin"});
     }
 
     /**

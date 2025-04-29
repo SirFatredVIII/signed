@@ -1,5 +1,5 @@
 import { ModuleItem } from "@/app/components/modules/moduleItem"
-import { useContext, useEffect, useState } from "react"
+import { BaseSyntheticEvent, useContext, useEffect, useState } from "react"
 import { StateContext } from "../../../../context"
 import { Module } from "@/app/types/module";
 import { RetrieveAllModules } from "@/app/accessors/modules.accessor";
@@ -14,26 +14,32 @@ export const ModuleTree = () => {
 
     useEffect(() => {
         RetrieveAllModules().then((modules) => {setModules(modules)});
-    })
+    }, [state])
 
-    const handlePracticeClick = () => {
+    const handlePracticeClick = (e: BaseSyntheticEvent) => {
         setState({...state, currentPage: "practice"})
     }
 
-    const handleModuleClick = () => {
-        setState({...state, modulePanelOpen: !state.modulePanelOpen});
+    const handleModuleClick = (e: BaseSyntheticEvent) => {
+
+        let newModule: Module | "na" = "na";
+        if (state.currentModule === "na") {
+            newModule = modules[e.target.id]
+        } 
+        
+        setState({...state, modulePanelOpen: !state.modulePanelOpen, currentModule: newModule});
     }
 
     return (
-        <div className="mb-10 mt-15">
-            <h1 className={"w-full flex justify-center text-5xl pt-10 font-bold select-none"}>
+        <div className="mb-10">
+            <h1 className={"w-full flex justify-center text-5xl pt-30 font-bold select-none"}>
                 Welcome back!
             </h1>
-            <div className="grid justify-center gap-20 bg-signed-light-blue p-20 rounded-2xl w-3/4 mt-20 m-auto">
+            <div className={"grid justify-center gap-20 bg-signed-light-blue p-20 rounded-2xl w-3/4 mt-20 m-auto"}>
                 {
                     modules.map((module) => {
                         return (
-                            <ModuleItem title={module.name} disabled={module.id > 0} key={module.id} practiceCallback={handlePracticeClick} moduleCallback={handleModuleClick}/>
+                            <ModuleItem key={module.id} module={module} practiceCallback={handlePracticeClick} moduleCallback={handleModuleClick}/>
                         )
                     })
                 }

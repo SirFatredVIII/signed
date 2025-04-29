@@ -1,5 +1,5 @@
 import { User } from "@/app/types/user";
-import Module from "module";
+import { Module } from "@/app/types/module";
 import React, { Dispatch, SetStateAction } from "react";
 
 interface ClientState {

@@ -2,6 +2,10 @@ import { InputButton } from "@/app/components/input/button";
 import { InputForm } from "@/app/components/input/form";
 import { BaseSyntheticEvent, useContext, useEffect, useState } from "react"
 import { StateContext } from "../../../../context";
+import { genSaltSync, hashSync, compareSync } from "bcrypt-ts";
+import { collection, doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
+import { config } from "../../../../configuration";
+import { secret } from "./secret_salt";
 
 /**
  * Simple sign up component used to sign up a user to our service and add
@@ -145,9 +149,42 @@ export const SignUp = () => {
             setTriedSignUp(true);
             allForms = newForms;
         } else {
-            // add new entry to firebase here
-            // setState({...state, currentPage: "signIn"});
-            console.log("no errors!")
+            
+            // ask Drew for the secret -- we just can't be posting our salt online
+            const hashedPassword = hashSync(password, secret);
+            const database = getFirestore(config);
+    
+              const usersMetadata = getDoc(doc(database, "metadata", "users"));
+              usersMetadata.then((data) => {
+                const highest_id: number = data.data()?.highest_id + 1;
+                setDoc(doc(collection(database, "users"), username + "_" + highest_id), {
+                    id: highest_id,
+                    username: username,
+                    pass: hashedPassword,
+                    email: email,
+                    type: "customer",
+                    avatar: "na",
+                    history: {
+                        modules_started: [-1],
+                        modules_finished: [-1],
+                        modules_mastered: [-1],
+                        total_learn_time: 0,
+                        total_practice_time: 0
+                    },
+                    permissions: {
+                        create_modules: false,
+                        delete_modules: false,
+                        read_modules: true,
+                        write_modules: false
+                    },                    
+                }).then(() => {
+                    setDoc(doc(collection(database, "metadata"), "users"), {
+                        highest_id: highest_id          
+                    }).then(() => {
+                        setState({...state, currentPage: "signIn"});
+                    })
+                })
+              })
         }
     }
 

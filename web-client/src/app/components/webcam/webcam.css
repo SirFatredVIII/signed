@@ -8,6 +8,8 @@
 .webcam-video {
     width: 100%;
     border-radius: 10px;
+    transform: scaleX(-1);
+    object-fit: cover;
 }
 
 .preview-img {

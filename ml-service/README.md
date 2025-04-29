@@ -2,9 +2,11 @@ This service contains our computer vision model and all supporting functionality
 
 ## Credit
 
-Our model is trained on the Sign Language MNIST dataset: https://www.kaggle.com/datasets/datamunge/sign-language-mnist?resource=download
+Our keras model is trained on the Sign Language MNIST dataset: https://www.kaggle.com/datasets/datamunge/sign-language-mnist?resource=download
 
-The model is a modified version of this CNN on Kaggle: https://www.kaggle.com/code/madz2000/cnn-using-keras-100-accuracy/notebook
+This model is a modified version of this CNN on Kaggle: https://www.kaggle.com/code/madz2000/cnn-using-keras-100-accuracy/notebook
+
+Our sklearn model is a modified version of this sign language detection model: https://github.com/computervisioneng/sign-language-detector-python/tree/master
 
 ## Getting Started
 

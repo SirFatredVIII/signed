@@ -6,6 +6,18 @@ import { genSaltSync, hashSync, compareSync } from "bcrypt-ts";
 import { collection, doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
 import { config } from "../../../../configuration";
 import { secret } from "./secret_salt";
+import { IncrementHighestId, RetrieveHighestId } from "@/app/accessors/metadata.accessor";
+import { CreateNewUser } from "@/app/accessors/users.accessor";
+
+interface IForm {
+    type: "text" | "email" | "password", 
+    label: string, 
+    value: string, 
+    handler: (_: BaseSyntheticEvent) => void,
+    errorCondition: () => boolean, 
+    errorMessage: string,
+    error: boolean
+}
 
 /**
  * Simple sign up component used to sign up a user to our service and add
@@ -26,14 +38,7 @@ export const SignUp = () => {
     /**
      * A list of all input forms that make up the sign-up sheet. Should be quite exapandable if we ever need more.
      */
-    let allForms: { 
-        type: "text" | "email" | "password", 
-        label: string, 
-        value: string, 
-        handler: (_: BaseSyntheticEvent) => void,
-        errorCondition: () => boolean, 
-        errorMessage: string,
-        error: boolean}[] = [
+    let allForms: IForm[] = [
         {
             type: "text",
             label: "Username",
@@ -124,14 +129,7 @@ export const SignUp = () => {
         setTriedSignUp(false);
         let errorFound = false;
 
-        const newForms: { 
-            type: "text" | "email" | "password", 
-            label: string, 
-            value: string, 
-            handler: (_: BaseSyntheticEvent) => void,
-            errorCondition: () => boolean, 
-            errorMessage: string,
-            error: boolean}[] = []
+        const newForms: IForm[] = []
             
         allForms.forEach((form) => {
             if (form.errorCondition()) {
@@ -149,39 +147,13 @@ export const SignUp = () => {
             setTriedSignUp(true);
             allForms = newForms;
         } else {
-            
-            // ask Drew for the secret -- we just can't be posting our salt online
-            const hashedPassword = hashSync(password, secret);
-            const database = getFirestore(config);
-    
-              const usersMetadata = getDoc(doc(database, "metadata", "users"));
-              usersMetadata.then((data) => {
-                const highest_id: number = data.data()?.highest_id + 1;
-                setDoc(doc(collection(database, "users"), username + "_" + highest_id), {
-                    id: highest_id,
-                    username: username,
-                    pass: hashedPassword,
-                    email: email,
-                    type: "customer",
-                    avatar: "na",
-                    history: {
-                        modules_started: [-1],
-                        modules_finished: [-1],
-                        modules_mastered: [-1],
-                        total_learn_time: 0,
-                        total_practice_time: 0
-                    },
-                    permissions: {
-                        create_modules: false,
-                        delete_modules: false,
-                        read_modules: true,
-                        write_modules: false
-                    },                    
-                }).then(() => {
-                    setDoc(doc(collection(database, "metadata"), "users"), {
-                        highest_id: highest_id          
-                    }).then(() => {
-                        setState({...state, currentPage: "signIn"});
+                // after creating the new player, update the metadata of what the "highest id" is, then once that's all done,
+                // we can move on to the sign in page.
+                RetrieveHighestId().then((data) => {
+                    const highestId: number = data.data()?.highest_id + 1;
+                    CreateNewUser(username, highestId, password, email).then(() => {
+                        IncrementHighestId(highestId).then(() => {
+                            setState({...state, currentPage: "signIn"});
                     })
                 })
               })

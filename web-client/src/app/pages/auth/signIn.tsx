@@ -2,8 +2,7 @@ import { InputButton } from "@/app/components/input/button";
 import { InputForm } from "@/app/components/input/form";
 import { BaseSyntheticEvent, useContext, useEffect, useState } from "react"
 import { StateContext } from "../../../../context";
-import { IncrementHighestId, RetrieveHighestId } from "@/app/accessors/metadata.accessor";
-import { CreateNewUser, RetrieveUser } from "@/app/accessors/users.accessor";
+import { RetrieveUser } from "@/app/accessors/users.accessor";
 import { hashSync } from "bcrypt-ts";
 import { secret } from "./secret_salt";
 import { IForm } from "./signUp";
@@ -54,8 +53,6 @@ export const SignIn = () => {
      * Validates the inputs received, checks the password, and authenticates the user into the rest of the program.
      */
     const handleSignIn = () => {
-        
-        let errorFound = false;
 
         // authenticate here
         RetrieveUser(email).then((user) => {
@@ -67,12 +64,6 @@ export const SignIn = () => {
                 setState({...state, currentPage: "practice", currentUser: user.email});
             }
         });
-
-        if (errorFound) {
-            // if not authenticated, let the player know!
-        } else {
-            // once authenticated, move onto the landing page (learn)
-        }
     }
 
     // if all forms are filled out, feel free to submit the form. or at least try.
@@ -95,7 +86,7 @@ export const SignIn = () => {
                         }
                     </div>
                     {<InputButton color="blue" label="Sign in" callback={handleSignIn} disabled={!readyToSubmit}></InputButton>}
-                    <div className="text-red-900 text-center">Email / Password not correct!</div>
+                    {error && <div className="text-red-900 text-center">Email / Password not correct!</div>}
                 </div>
             </div>
             <div className="grid justify-center mb-5 w-10vw ">

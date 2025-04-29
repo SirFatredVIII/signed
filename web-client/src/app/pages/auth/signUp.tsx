@@ -178,7 +178,7 @@ export const SignUp = () => {
                             })
                         }
                     </div>
-                    {readyToSubmit && <InputButton color="blue" label="Sign up" callback={handleSignUp}></InputButton>}
+                    {readyToSubmit && <InputButton color="blue" label="Sign up" callback={handleSignUp} disabled={false}></InputButton>}
                 </div>
             </div>
             <div className="grid justify-center mb-5 w-10vw ">

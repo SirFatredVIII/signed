@@ -1,4 +1,3 @@
 .venv
 app/__pycache__
-app/sign_language_model.keras
 mnist_data

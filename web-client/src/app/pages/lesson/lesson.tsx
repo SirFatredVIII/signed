@@ -7,6 +7,7 @@ import { StateContext } from "../../../../context"
 import { Lesson as LessonType, Stage } from "@/app/types/lessons"
 import { LessonItem } from "./lessonItem"
 import { LoadingWrapper } from "@/app/components/loading/loading"
+import { LessonContent } from "./lessonContent"
 
 /**
  * The main page where lessons are conducted. This is the main bulk of a particular module.
@@ -17,20 +18,43 @@ export const LessonPage = () => {
     const [lessons, setLessons] = useState<LessonType[]>([]);
     const [stages, setStages] = useState<Stage[]>([]);
     const [loaded, setLoaded] = useState(false);
+    const [lessonsCompleted, setLessonsCompleted] = useState<number[]>([]);
+    const [stagesCompleted, setStagesCompleted] = useState<number[]>([]);
 
     useEffect(() => {
         if (state.currentModule !== "na") {
-            RetrieveLessonsByManyId([0]).then((lessons) => {
+            RetrieveLessonsByManyId(state.currentModule.lessons).then((lessons) => {
                 setLessons(lessons);
                 lessons.forEach((lesson) => {
                     RetrieveStagesByManyId(lesson.stages).then((stages) => {
                         setStages(stages)
                     })
                 })
+
+                if (state.currentUser !== "na") {
+                    const lessonsProgress = state.currentUser.history.lessons_progress;
+
+                    const lessonsCompleted: number[] = []
+                    const stagesCompleted: number[] = []
+                    lessonsProgress.forEach((lessonProg) => {
+                        lessons.forEach((otherLesson) => {
+                            if (lessonProg.lessonid === otherLesson.id ) {
+                                if (lessonProg.stagesCompleted.length === otherLesson.stages.length) {
+                                    lessonsCompleted.push(lessonProg.lessonid);
+                                } 
+                                stagesCompleted.push(...lessonProg.stagesCompleted)
+                            }
+                        })
+                    })
+                    setLessonsCompleted(lessonsCompleted);
+                    setStagesCompleted(stagesCompleted);
+                }
                 new Promise(f => setTimeout(f, 500)).then(() => setLoaded(true));
             })
         }
     }, [state])
+
+    console.log(lessonsCompleted)
 
     const navigateHome = () => {
         setState({...state, currentPage: "learn", currentModule: "na", modulePanelOpen: false})
@@ -63,7 +87,7 @@ export const LessonPage = () => {
                 }
             </div>
             <div className="bg-signed-light-blue col-span-9">
-                mainarea content
+                <LessonContent source="/a.png" alt="signing 'A' in ASL" stage={stages[0]}/>
             </div>
         </div>
     )

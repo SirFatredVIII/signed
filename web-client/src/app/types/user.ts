@@ -1,9 +1,15 @@
 type UserType = "customer" | "admin"
 
+type LessonHistory = {
+    lessonid: number;
+    stagesCompleted: number[];
+}
+
 type UserHistory = {
     modules_started: number[];
     modules_finished: number[];
     modules_mastered: number[];
+    lessons_progress: LessonHistory[];
     total_learn_time: number;
     total_practice_time: number;
 }

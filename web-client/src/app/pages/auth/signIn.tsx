@@ -17,7 +17,7 @@ export const SignIn = () => {
     const [error, raiseError] = useState(false);
 
     const { state, setState } = useContext(StateContext);
-    
+
     /**
      * A list of all input forms that make up the sign-up sheet. Should be quite exapandable if we ever need more.
      */
@@ -27,7 +27,7 @@ export const SignIn = () => {
             label: "Email Address",
             value: email.toString(),
             handler: (e: BaseSyntheticEvent) => setEmail(e.target.value),
-            errorCondition: () => {return !email.includes("@")},
+            errorCondition: () => { return !email.includes("@") },
             errorMessage: "Not a valid email address!",
             error: false
         },
@@ -36,7 +36,7 @@ export const SignIn = () => {
             label: "Password",
             value: password.toString(),
             handler: (e: BaseSyntheticEvent) => setPassword(e.target.value),
-            errorCondition: () => {return false},
+            errorCondition: () => { return false },
             errorMessage: "na",
             error: false
         }
@@ -46,7 +46,7 @@ export const SignIn = () => {
      * Event handler designed to renavigate to the sign up page.
      */
     const handleSignUp = () => {
-        setState({...state, currentPage: "signup"});
+        setState({ ...state, currentPage: "signup" });
     }
 
     /**
@@ -61,7 +61,7 @@ export const SignIn = () => {
                 raiseError(true);
             } else {
                 raiseError(false);
-                setState({...state, currentPage: "practice", currentUser: user.email});
+                setState({ ...state, currentPage: "practice", currentUser: user.email });
             }
         });
     }
@@ -80,7 +80,7 @@ export const SignIn = () => {
                         {
                             allForms.map((form) => {
                                 return (
-                                    <InputForm type={form.type} label={form.label} handler={form.handler} value={form.value} key={form.label} errorMessage={form.errorMessage} error={form.error} errorCondition={form.errorCondition}/>
+                                    <InputForm type={form.type} label={form.label} handler={form.handler} value={form.value} key={form.label} errorMessage={form.errorMessage} error={form.error} errorCondition={form.errorCondition} />
                                 )
                             })
                         }

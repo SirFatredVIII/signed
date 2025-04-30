@@ -3,6 +3,7 @@ import { classifySign } from "@/app/actions/model.action";
 import { Button } from "@mui/material";
 import Image from "next/image";
 import { useRef, useState } from "react";
+import "./webcam.css";
 
 const Webcam = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -21,6 +22,7 @@ const Webcam = () => {
         });
         videoRef.current.srcObject = stream;
         setMediaStream(stream);
+        setMessage(null);
       } catch (error) {
         console.error("Error accessing webcam:", error);
       }
@@ -31,12 +33,11 @@ const Webcam = () => {
     if (mediaStream) {
       mediaStream.getTracks().forEach((track) => track.stop());
       setMediaStream(null);
-      videoRef.current = null;
     }
     try {
       const blob = await (await fetch(capturedImage!)).blob();
-      const result = await classifySign(blob);
-      setMessage(result.message);
+      const predictedClass = await classifySign(blob);
+      setMessage(predictedClass);
     } catch (e) {
       console.error("Error classifying sign:", e);
     }
@@ -53,7 +54,10 @@ const Webcam = () => {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         // Draw video frame onto canvas
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        context.save();
+        context.scale(-1, 1); // Flip horizontally
+        context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+        context.restore();
         // Get image data URL from canvas
         setCapturedImage(canvas.toDataURL("image/png"));
       }

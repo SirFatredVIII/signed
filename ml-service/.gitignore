@@ -1,3 +1,5 @@
 .venv
 app/__pycache__
-mnist_data
+app/keras_classifier/mnist_data
+app/sklearn_classifier/data
+app/mnist_data

@@ -1,19 +1,24 @@
 import { ModuleItem } from "@/app/components/modules/moduleItem"
-import { BaseSyntheticEvent, useContext, useEffect, useState } from "react"
+import { BaseSyntheticEvent, Dispatch, SetStateAction, useContext, useEffect, useState } from "react"
 import { StateContext } from "../../../../context"
 import { Module } from "@/app/types/module";
 import { RetrieveAllModules } from "@/app/accessors/modules.accessor";
 
+interface ModuleTreeProps {
+    loaded: boolean;
+    setLoaded: Dispatch<SetStateAction<boolean>>;
+}
+
 /**
  * The part of the screen representing the tree of our modules on the landing page.
  */
-export const ModuleTree = () => {
+export const ModuleTree: React.FC<ModuleTreeProps> = ({loaded, setLoaded}) => {
 
     const { state, setState } = useContext(StateContext);
     const [modules, setModules] = useState<Module[]>([])
 
     useEffect(() => {
-        RetrieveAllModules().then((modules) => {setModules(modules)});
+        RetrieveAllModules().then((modules) => {setModules(modules); setLoaded(true);});
     }, [state])
 
     const handlePracticeClick = (e: BaseSyntheticEvent) => {
@@ -33,6 +38,10 @@ export const ModuleTree = () => {
     let username = ""
     if (state.currentUser !== "na") {
         username = state.currentUser.username;
+    }
+
+    if (!loaded) {
+        return (<></>)
     }
 
     return (

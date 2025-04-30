@@ -16,13 +16,13 @@ export const AuthenticationPage = () => {
                 {/* left-hand side of the screen, deals with signing in / signing up */}
                 <div className="h-screen">
                     {
-                        state.currentPage === "signup" ? <SignUp/> : <SignIn/>
+                        state.currentPage === "signup" ? <SignUp /> : <SignIn />
                     }
-                    
+
                 </div>
                 {/* right-hand side of the screen, uh, I dunno, looks aesthetically pleasing */}
                 <div className={"bg-signed-blue w-full h-screen"}>
-                
+
                 </div>
             </div>
         </div>

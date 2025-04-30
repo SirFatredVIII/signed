@@ -1,9 +1,8 @@
-import { collection, doc, DocumentData, getDoc, getDocs, getFirestore, query, where } from "firebase/firestore";
+import { collection, DocumentData, getDocs, getFirestore, query, where } from "firebase/firestore";
 import { config } from "../../../configuration";
 import { Module } from "../types/module";
 
 const database = getFirestore(config);
-const modulesDoc = doc(database, "metadata", "modules")
 
 /**
  * Converts a firebase document to an internal module type.
@@ -17,7 +16,8 @@ const docToModule = (document: DocumentData) => {
         skillLevel: document.skillLevel,
         prereq: document.prereq,
         signs: document.signs,
-        description: document.description
+        description: document.description,
+        lessons: document.lessons
     }
     return moduleToReturn;
 }

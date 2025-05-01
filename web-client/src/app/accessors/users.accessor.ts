@@ -205,7 +205,7 @@ export const CompleteStage = async (userid: number, lessonid: number, stageid: n
     });
     const user = docToUser(docs[0]);
 
-    const lesson = await RetrieveLessonById(stageid);
+    const lesson = await RetrieveLessonById(lessonid);
     const stage = await RetrieveStageById(stageid);
 
     const currentLessonsProgress = user.history.lessons_progress;

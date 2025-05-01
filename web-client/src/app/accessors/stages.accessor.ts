@@ -1,6 +1,9 @@
 import { collection, DocumentData, getDocs, getFirestore, query, where } from "firebase/firestore";
 import { config } from "../../../configuration";
-import { Stage } from "../types/lessons";
+import { Lesson, Stage } from "../types/lessons";
+import { RetrieveLessonById, RetrieveLessonsByManyId } from "./lessons.accessor";
+import { RetrieveModuleById } from "./modules.accessor";
+import { LessonStages } from "../pages/lesson/lesson";
 
 const database = getFirestore(config);
 
@@ -53,4 +56,38 @@ export const RetrieveStagesByManyId = async (ids: number[]) => {
     });
 
     return stages;
+}
+
+/**
+ * Accesses the firebase to return the specified stages and lessons from a module.
+ * @param lessonid the id of the module from which to return all stages and lessons
+ * @returns a mapping of lessonids to stageids
+ */
+export const RetrieveStagesOfModule = async (moduleid: number) => {
+    const module = await RetrieveModuleById(moduleid);
+    const lessons: Lesson[] = await RetrieveLessonsByManyId(module.lessons);
+    const allStageIds: number[] = []
+
+    lessons.forEach((lesson) => {
+        allStageIds.push(...lesson.stages);
+    })
+
+    const allStages = await RetrieveStagesByManyId(allStageIds);
+    const moduleStages: LessonStages[] = lessons.map((lesson) => {
+        const stagesToAppend: Stage[] = []
+        lesson.stages.forEach((stageId) => {
+            allStages.forEach((otherStage) => {
+                if (stageId === otherStage.id) {
+                    stagesToAppend.push(otherStage);
+                }
+            })
+        })
+        return {
+            id: lesson.id,
+            stages: stagesToAppend
+        }
+    })
+
+
+    return moduleStages;
 }

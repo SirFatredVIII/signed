@@ -1,15 +1,20 @@
 import { faBookOpenReader, faHouse } from "@fortawesome/free-solid-svg-icons"
 import { SidebarItem } from "./sidebarItem"
 import { RetrieveLessonsByManyId } from "@/app/accessors/lessons.accessor"
-import { RetrieveStageById, RetrieveStagesByManyId } from "@/app/accessors/stages.accessor"
+import { RetrieveStageById, RetrieveStagesByManyId, RetrieveStagesOfModule } from "@/app/accessors/stages.accessor"
 import { BaseSyntheticEvent, useContext, useEffect, useState } from "react"
 import { StateContext } from "../../../../context"
-import { Lesson as LessonType, Stage } from "@/app/types/lessons"
+import { Stage } from "@/app/types/lessons"
 import { LessonItem } from "./lessonItem"
 import { LoadingWrapper } from "@/app/components/loading/loading"
 import { LessonContent } from "./lessonContent"
 import { CompleteLesson, CompleteStage, ResetLesson, RetrieveUser } from "@/app/accessors/users.accessor"
 import { InputButton } from "@/app/components/input/button"
+
+export interface LessonStages {
+    id: number;
+    stages: Stage[];
+}
 
 /**
  * The main page where lessons are conducted. This is the main bulk of a particular module.
@@ -17,80 +22,73 @@ import { InputButton } from "@/app/components/input/button"
 export const LessonPage = () => {
 
     const {state, setState} = useContext(StateContext);
-    const [lessons, setLessons] = useState<LessonType[]>([]);
-    const [stages, setStages] = useState<Stage[]>([]);
+    const [lessons, setLessons] = useState<LessonStages[]>([]);
     const [loaded, setLoaded] = useState(false);
-    const [lessonsCompleted, setLessonsCompleted] = useState<number[]>([]);
     const [stagesCompleted, setStagesCompleted] = useState<Map<number, number[]>>(new Map());
 
     useEffect(() => {
         if (state.currentModule !== "na") {
-            RetrieveLessonsByManyId(state.currentModule.lessons).then((lessons) => {
-                setLessons(lessons);
-                lessons.forEach((lesson) => {
-                    RetrieveStagesByManyId(lesson.stages).then((stages) => {
-                        setStages(stages)
-                    })
-                })
+            // Retrieve the lessons and stages of the entire module
+            RetrieveStagesOfModule(state.currentModule.id).then((allStages) => {
+                setLessons(allStages);
 
+                // Mark the current stages across all lessons that have been completed
                 if (state.currentUser !== "na") {
                     const lessonsProgress = state.currentUser.history.lessons_progress;
-
-                    const lessonsCompleted: number[] = []
+                
                     const stagesCompleted: Map<number, number[]> = new Map();
                     lessonsProgress.forEach((lessonProg) => {
-                        lessons.forEach((otherLesson) => {
-                            if (lessonProg.lessonid === otherLesson.id ) {
-                                if (lessonProg.stagesCompleted.length === otherLesson.stages.length) {
-                                    lessonsCompleted.push(lessonProg.lessonid);
-                                } 
+                        allStages.forEach((otherLesson) => {
+                            if (lessonProg.lessonid === otherLesson.id) {
                                 stagesCompleted.set(lessonProg.lessonid, lessonProg.stagesCompleted)
                             }
                         })
                     })
-                    setLessonsCompleted(lessonsCompleted);
+
                     setStagesCompleted(stagesCompleted);
                 }
-                new Promise(f => setTimeout(f, 500)).then(() => setLoaded(true));
             })
-        }
+
+                new Promise(f => setTimeout(f, 500)).then(() => setLoaded(true));
+            }
     }, [state])
 
     // should be the first lesson in the list of uncompleted lessons
     const lessonToComplete = lessons.filter((lesson) => {
         let lessonNotMatched = true;
-        lessonsCompleted.forEach((otherLessonId) => {
-            if (lesson.id === otherLessonId)  {
-                lessonNotMatched = false;
-            }
-        })
+        const completedStagesOfLesson = stagesCompleted.get(lesson.id)
+        if (completedStagesOfLesson !== undefined && completedStagesOfLesson.length === lesson.stages.length) {
+            lessonNotMatched = false;
+        }
         return lessonNotMatched;
     })[0]
 
-    let idOfStageToComplete = -1;
+    // should be the first stage in the list of stages in the current lesson to complete
+    let idOfStageToComplete = 0;
     if (stagesCompleted !== undefined && lessonToComplete !== undefined) {
-        // should be the first stage in the list of stages in the current lesson to complete
         idOfStageToComplete = lessonToComplete.stages.filter((stage) => {
             let stageNotMatched = true;
-            stagesCompleted.get(lessonToComplete.id)?.forEach((otherStage) => {
-                if (stage === otherStage)  {
-                    stageNotMatched = false;
-                }
-            })
+            const stagesOfLessonCompleted = stagesCompleted.get(lessonToComplete.id);
+            if (stagesOfLessonCompleted !== undefined) {
+                stagesOfLessonCompleted.forEach((otherStage) => {
+                    if (stage.id === otherStage)  {
+                        stageNotMatched = false;
+                    }
+                })
+            }
             return stageNotMatched;
-        })[0]
+        })[0].id;
     }
 
-    const stageToComplete = stages.filter((stage) => {
-        let stageMatched = false;
-        if (stage.id === idOfStageToComplete) {
-            stageMatched = true;
-        }
-        return stageMatched;
-    })[0];
-
-    if (stageToComplete === undefined) {
-
+    let stageToComplete = undefined;
+    if (lessonToComplete !== undefined) {
+        stageToComplete = lessonToComplete.stages.filter((stage) => {
+            let stageMatched = false;
+            if (stage.id === idOfStageToComplete) {
+                stageMatched = true;
+            }
+            return stageMatched;
+        })[0];
     }
 
     const navigateHome = () => {
@@ -102,8 +100,24 @@ export const LessonPage = () => {
     }
 
     const advanceToNextStage = (e: BaseSyntheticEvent) => {
-        if (state.currentUser !== "na" && state.currentModule !== "na") {
+        if (state.currentUser !== "na" && state.currentModule !== "na" && stageToComplete !== undefined) {
             CompleteStage(state.currentUser.id, lessonToComplete.id, stageToComplete.id).then(() => {
+                if (state.currentUser !== "na") {
+                    RetrieveUser(state.currentUser.email).then((user) => {
+                        setState({...state, currentUser: user});
+                    })
+                }
+            })
+        }
+    }
+
+    const restartLesson = (e: BaseSyntheticEvent) => {
+        if (state.currentUser !== "na" && state.currentModule !== "na") {
+            let lessonToRest = state.currentModule.lessons[state.currentModule.lessons.length - 1];
+            if (lessonToComplete !== undefined) {
+                lessonToRest = lessonToComplete.id;
+            }
+            ResetLesson(state.currentUser.id, lessonToRest).then(() => {
                 if (state.currentUser !== "na") {
                     RetrieveUser(state.currentUser.email).then((user) => {
                         setState({...state, currentUser: user});
@@ -121,12 +135,13 @@ export const LessonPage = () => {
 
     return (
         <div className="grid grid-cols-10">
-            <div className="bg-signed-darker-blue col-span-1 h-screen -mt-15">
-                <div className="pt-15 border-b-5 border-b-signed-blue">
+            <div className="bg-signed-darker-blue col-span-1 h-screen -mt-15 grid-rows-2 grid grid-rows-10">
+                <div className="pt-15 border-b-5 border-b-signed-blue row-span-2">
                     <SidebarItem label="Home" active={false} action={navigateHome} icon={faHouse} type="actionItem" completed={false}/>
                     <SidebarItem label="Learn" active={true} action={() => { } } icon={faBookOpenReader} type="actionItem" completed={false}/>
                     <SidebarItem label="Practice" active={false} action={navigatePractice} icon={faBookOpenReader} type="actionItem" completed={false}/>
                 </div>
+                <div className="overflow-y-scroll row-span-8">
                 {
                     lessons.map((lesson) => {
                         let passedCompletedStages: number[] = []
@@ -137,17 +152,27 @@ export const LessonPage = () => {
                             }
                         }
 
+                        let stagesToRender: Stage[] = [];
+                        if (lessonToComplete !== undefined) {
+                            stagesToRender = lesson.stages;
+                        }
+
                         return (
-                            <LessonItem lesson={lesson} stages={stages} activeStage={idOfStageToComplete} completedStages={passedCompletedStages} key={lesson.id}/>
+                            <LessonItem lessonId={lesson.id} stages={stagesToRender} activeStage={idOfStageToComplete} completedStages={passedCompletedStages} key={lesson.id}/>
                         )
                     })
                 }
+                </div>
+                
             </div>
             <div className="bg-signed-light-blue col-span-9">
                 {stageToComplete !== undefined &&
                     <LessonContent stage={stageToComplete} onComplete={() => {}}/>
                 }
-                <InputButton color={"green"} label={"Advance..."} callback={advanceToNextStage} disabled={false}/>
+                <div className="flex gap-3 justify-center">
+                    <InputButton color={"green"} label={"Advance..."} callback={advanceToNextStage} disabled={false}/>
+                    <InputButton color={"teal"} label={"Restart lesson..."} callback={restartLesson} disabled={false}/>
+                </div>
             </div>
         </div>
     )

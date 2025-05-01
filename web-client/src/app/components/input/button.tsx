@@ -20,6 +20,12 @@ export const InputButton: React.FC<InputButtonProps> = ({color, label, callback,
         case "blue":
             newColors = "bg-signed-blue text-white hover:bg-signed-dark-blue hover:text-signed-light-blue hover:cursor-pointer";
             break;
+        case "green":
+            newColors = "bg-emerald-600 text-white outline-3 outline-emerald-800 hover:bg-emerald-800 hover:text-emerald-100 hover:cursor-pointer";
+            break;
+        case "teal":
+            newColors = "bg-teal-600 text-white outline-3 outline-teal-800 hover:bg-teal-800 hover:text-teal-100 hover:cursor-pointer";
+            break;
         default:
             newColors = "bg-slate-400 text-slate-900 hover:bg-slate-900";
             break;

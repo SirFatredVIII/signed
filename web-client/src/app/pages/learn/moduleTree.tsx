@@ -37,6 +37,10 @@ export const ModuleTree: React.FC<ModuleTreeProps> = ({loaded, setLoaded}) => {
         setState({...state, modulePanelOpen: !state.modulePanelOpen, currentModule: newModule});
     }
 
+    const handleUserSettingsClick = (e: BaseSyntheticEvent) => {
+        setState({...state, modulePanelOpen: false, currentModule: "na", currentPage: "userSettings"});
+    }
+
     let username = ""
     if (state.currentUser !== "na") {
         username = state.currentUser.username;
@@ -49,7 +53,7 @@ export const ModuleTree: React.FC<ModuleTreeProps> = ({loaded, setLoaded}) => {
     return (
         <div className="mb-10">
             <div className="flex justify-end pt-20">
-                <FontAwesomeIcon icon={faUserGear} className="text-7xl pr-5 text-signed-blue hover:text-signed-dark-blue hover:cursor-pointer"/>
+                <FontAwesomeIcon icon={faUserGear} onClick={handleUserSettingsClick} className="text-7xl pr-5 text-signed-blue hover:text-signed-dark-blue hover:cursor-pointer"/>
             </div>
             <h1 className={"w-full flex justify-center text-5xl pt-10 font-bold select-none"}>
                 {"Welcome back, " + username + "!"}

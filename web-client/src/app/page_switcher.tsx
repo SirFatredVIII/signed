@@ -9,6 +9,7 @@ import { LessonPage } from "./pages/lesson/lesson";
 import { Lesson, Stage } from "./types/lessons";
 import { RetrieveLessonById } from "./accessors/lessons.accessor";
 import { RetrieveStageById } from "./accessors/stages.accessor";
+import { UserSettingsPage } from "./pages/userSettings/userSettings";
 export default function PageSwitcher() {
 
   const [state, setState] = useState(useContext(StateContext).state);
@@ -22,6 +23,7 @@ export default function PageSwitcher() {
         {page == "practice" && <PracticePage />}
         {(page == "signup" || page == "signin") && <AuthenticationPage />}
         {page == "learn" && <LearningHub/>}
+        {page == "userSettings" && <UserSettingsPage/>}
         {page == "lesson" && <LessonPage/>}
       </StateContext.Provider>
     </>

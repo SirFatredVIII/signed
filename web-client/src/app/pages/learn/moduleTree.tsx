@@ -3,6 +3,8 @@ import { BaseSyntheticEvent, Dispatch, SetStateAction, useContext, useEffect, us
 import { StateContext } from "../../../../context"
 import { Module } from "@/app/types/module";
 import { RetrieveAllModules } from "@/app/accessors/modules.accessor";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faUserGear } from "@fortawesome/free-solid-svg-icons";
 
 interface ModuleTreeProps {
     loaded: boolean;
@@ -46,7 +48,10 @@ export const ModuleTree: React.FC<ModuleTreeProps> = ({loaded, setLoaded}) => {
 
     return (
         <div className="mb-10">
-            <h1 className={"w-full flex justify-center text-5xl pt-30 font-bold select-none"}>
+            <div className="flex justify-end pt-20">
+                <FontAwesomeIcon icon={faUserGear} className="text-7xl pr-5 text-signed-blue hover:text-signed-dark-blue hover:cursor-pointer"/>
+            </div>
+            <h1 className={"w-full flex justify-center text-5xl pt-10 font-bold select-none"}>
                 {"Welcome back, " + username + "!"}
             </h1>
             <div className={"grid justify-center gap-20 bg-signed-light-blue p-20 rounded-2xl w-3/4 mt-20 m-auto"}>

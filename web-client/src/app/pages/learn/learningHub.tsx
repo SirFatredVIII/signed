@@ -1,7 +1,6 @@
 import { useContext, useState } from "react";
 import { StateContext } from "../../../../context";
 import { ModuleTree } from "./moduleTree"
-import { RetrieveAllModules, RetrieveModuleById } from "@/app/accessors/modules.accessor";
 import { ModulePanel } from "./modulePanel";
 import { LoadingWrapper } from "@/app/components/loading/loading";
 

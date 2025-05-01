@@ -6,7 +6,7 @@ interface ClientState {
 }
 
 const initialState: ClientState = {
-    currentPage: "practice",
+    currentPage: "home",
     currentUser: "na"
 }
 

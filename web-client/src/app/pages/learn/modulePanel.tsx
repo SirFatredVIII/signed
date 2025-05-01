@@ -29,7 +29,7 @@ export const ModulePanel = () => {
         <div className="bg-signed-blue">
             <h2 className={"w-full flex justify-center text-4xl pt-30 font-bold select-none text-white"}>{title}</h2>
             <div className="w-full">
-                <Image src={"/abc.gif"} alt={"a hand signing the ASL alphabet"} width={"300"} height={"300"} className="m-auto outline-5 outline-signed-darker-blue mt-10"></Image>
+                <Image src={"/abc.gif"} alt={"a hand signing the ASL alphabet"} width={"300"} height={"300"} unoptimized={true} className="m-auto outline-5 outline-signed-darker-blue mt-10"/>
             </div>
             <div className="w-full flex justify-center">
                 <h2 className={"w-9/10 text-2xl mt-10 font-bold italic select-none text-white p-10 text-center bg-signed-dark-blue outline-5 outline-signed-darker-blue rounded-3xl"}>{description}</h2>

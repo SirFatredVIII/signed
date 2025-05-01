@@ -46,12 +46,26 @@ export const LessonPage = () => {
                     })
 
                     setStagesCompleted(stagesCompleted);
-                }
-            })
+
+                        }
+                    })
 
                 new Promise(f => setTimeout(f, 500)).then(() => setLoaded(true));
             }
     }, [state])
+
+    useEffect(() => {
+        let highestLessonId = -1;
+        stagesCompleted.keys().forEach((key) => {
+            if (key > highestLessonId) {
+                highestLessonId = key;
+            }
+        })
+    
+        if (lessons.length !== 0 && stagesCompleted.get(highestLessonId)?.length === lessons[lessons.length - 1].stages.length) {
+            setState({...state, currentPage: "learn", currentModule: "na", modulePanelOpen: false});
+        }
+    })
 
     // should be the first lesson in the list of uncompleted lessons
     const lessonToComplete = lessons.filter((lesson) => {
@@ -101,12 +115,14 @@ export const LessonPage = () => {
 
     const advanceToNextStage = (e: BaseSyntheticEvent) => {
         if (state.currentUser !== "na" && state.currentModule !== "na" && stageToComplete !== undefined) {
+            setLoaded(false);
             CompleteStage(state.currentUser.id, lessonToComplete.id, stageToComplete.id).then(() => {
                 if (state.currentUser !== "na") {
                     RetrieveUser(state.currentUser.email).then((user) => {
                         setState({...state, currentUser: user});
                     })
                 }
+                setLoaded(true);
             })
         }
     }

@@ -5,7 +5,7 @@ type LessonHistory = {
     stagesCompleted: number[];
 }
 
-type UserHistory = {
+export type UserHistory = {
     modules_started: number[];
     modules_finished: number[];
     modules_mastered: number[];

@@ -15,7 +15,8 @@ const docToStage = (document: DocumentData) => {
         title: document.title,
         description: document.description,
         sign: document.sign,
-        type: document.type
+        type: document.type,
+        src: document.src
     }
     return stageToReturn;
 }

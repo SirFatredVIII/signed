@@ -4,6 +4,7 @@ export type Stage = {
     description: string;
     sign: number[];
     type: string;
+    src: string;
 }
 
 export type Lesson = {

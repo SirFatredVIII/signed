@@ -67,6 +67,15 @@ export const SignIn = () => {
         });
     }
 
+    /**
+     * TODO: Delete this function. This is used to quickly log on as Drew.
+     */
+    const handleDevTools = () => {
+        RetrieveUser("superdrew12@gmail.com").then((user) => {
+            setState({...state, currentPage: "learn", currentUser: user as User});
+        })
+    }
+
     // if all forms are filled out, feel free to submit the form. or at least try.
     const readyToSubmit = password.length > 3;
 
@@ -91,7 +100,8 @@ export const SignIn = () => {
                 </div>
             </div>
             <div className="grid justify-center mb-5 w-10vw ">
-                <div className="text-signed-blue italic font-bold hover:underline hover:cursor-pointer" onClick={handleSignUp}>I want to sign up...</div>
+                <div className="text-signed-blue italic font-bold hover:underline hover:cursor-pointer text-center" onClick={handleSignUp}>I want to sign up...</div>
+                <div className="text-white italic font-bold hover:underline hover:cursor-pointer hover:text-signed-blue text-center" onClick={handleDevTools}>Dev tools (sign in as Drew)...</div>
             </div>
         </div>
     )

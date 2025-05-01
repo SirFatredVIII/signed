@@ -13,10 +13,10 @@
 }
 
 @theme {
-  --color-signed-light-blue: #b8cdf8;
-  --color-signed-blue: #1768ac;
-  --color-signed-dark-blue: #0F426C;
-  --color-signed-darker-blue: #0C375A;
+  --color-signed-light-blue: #B8CDF9;
+  --color-signed-blue: #1868AC;
+  --color-signed-dark-blue: #1D203E;
+  --color-signed-darker-blue: #1D203E;
   --color-signed-darkest-blue: #051624;
 }
 
@@ -30,5 +30,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Barlow, sans-serif;
 }

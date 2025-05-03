@@ -1,4 +1,4 @@
-import Test from "@/app/components/sign_detector/test";
+import SignDetector from "@/app/components/sign_detector/sign_detector";
 import { Button } from "@mui/material";
 import { Dispatch, SetStateAction, useState } from "react";
 
@@ -10,7 +10,7 @@ export const PracticePage: React.FC<HomePageProps> = ({}) => {
       {/* <h1 className={"w-full flex justify-center text-7xl pt-20 italic font-bold select-none"}>
             Place giant fuck-ass camera frame here
           </h1> */}
-      <Test />
+      <SignDetector />
     </>
   );
 };

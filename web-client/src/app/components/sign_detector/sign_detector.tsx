@@ -1,239 +1,247 @@
-// "use client";
-// // import { classifySign } from "@/app/actions/model.action";
-// import { Button } from "@mui/material";
-// // import Image from "next/image";
-// // import { useRef, useState } from "react";
-// import "./sign_detector.css";
+import React, { useRef, useEffect, useCallback, useState } from "react";
+import "./sign_detector.css";
+import { classifySign } from "@/app/actions/model.action";
 
-// const { Hands } = await import("@mediapipe/hands");
-// const { Camera } = await import("@mediapipe/camera_utils");
-// import * as cam from "@mediapipe/camera_utils";
-// import Webcam from "react-webcam";
-// import { useEffect, useRef, useState } from "react";
-// import { classifySign } from "@/app/actions/model.action";
+declare global {
+  interface Window {
+    Hands: any;
+    drawConnectors: (
+      ctx: CanvasRenderingContext2D,
+      landmarks: any,
+      connections: any,
+      style?: { color?: string; lineWidth?: number }
+    ) => void;
+    drawLandmarks: (
+      ctx: CanvasRenderingContext2D,
+      landmarks: any,
+      style?: { color?: string; lineWidth?: number }
+    ) => void;
+  }
+}
 
-// const DATA_AUX_SIZE = 42;
-// const W = 640;
-// const H = 480;
+const loadScript = (src: string): Promise<void> =>
+  new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Failed to load: ${src}`));
+    document.body.appendChild(script);
+  });
 
-// const SignDetector = () => {
-//   const videoRef = useRef<HTMLVideoElement>(null);
-//   const canvasRef = useRef<HTMLCanvasElement>(null);
-//   const [prediction, setPrediction] = useState<string>("");
-//   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+const HAND_CONNECTIONS = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4], // Thumb
+  [0, 5],
+  [5, 6],
+  [6, 7],
+  [7, 8], // Index
+  [5, 9],
+  [9, 10],
+  [10, 11],
+  [11, 12], // Middle
+  [9, 13],
+  [13, 14],
+  [14, 15],
+  [15, 16], // Ring
+  [13, 17],
+  [0, 17],
+  [17, 18],
+  [18, 19],
+  [19, 20], // Pinky & Palm base
+];
 
-//   const startWebcam = async () => {
-//     if (videoRef.current && canvasRef.current) {
-//       try {
-//         const stream = await navigator.mediaDevices.getUserMedia({
-//           video: true,
-//         });
-//         videoRef.current.srcObject = stream;
-//         setMediaStream(stream);
-//       } catch (error) {
-//         console.error("Error accessing webcam:", error);
-//       }
-//     }
-//   };
+const DATA_AUX_SIZE = 42;
 
-//   const stopWebcam = async () => {
-//     if (mediaStream) {
-//       mediaStream.getTracks().forEach((track) => track.stop());
-//       setMediaStream(null);
-//       videoRef.current!.srcObject = null;
-//       canvasRef.current!.getContext("2d")?.clearRect(0, 0, W, H);
-//     }
-//   };
+const W = 640;
+const H = 480;
 
-//     useEffect(() => {
-//       const hands = new Hands({
-//         locateFile: (file) =>
-//           `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-//       });
+const SignDetector: React.FC = () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const handsRef = useRef<any>(null);
+  const rafRef = useRef<number | null>(null);
+  const [streaming, setStreaming] = useState(false);
+  const [prediction, setPrediction] = useState<string>("");
 
-//       hands.setOptions({
-//         maxNumHands: 1,
-//         modelComplexity: 1,
-//         minDetectionConfidence: 0.7,
-//         minTrackingConfidence: 0.5,
-//       });
+  const startCamera = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        setStreaming(true);
+      }
+    } catch (err) {
+      console.error("Failed to access camera:", err);
+    }
+    startTracking();
+  }, []);
 
-//       hands.onResults(async (results) => {
-//         const landmarks = results.multiHandLandmarks?.[0];
-//         if (!landmarks) return;
+  const stopCamera = useCallback(() => {
+    if (videoRef.current?.srcObject instanceof MediaStream) {
+      videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
+      setStreaming(false);
+    }
+    canvasRef.current?.getContext("2d")?.clearRect(0, 0, W, H);
+    setPrediction("");
+  }, []);
 
-//         const xVals = landmarks.map((lm) => lm.x);
-//         const yVals = landmarks.map((lm) => lm.y);
-//         const xMin = Math.min(...xVals);
-//         const yMin = Math.min(...yVals);
+  const cleanup = useCallback(async () => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (handsRef.current) {
+      try {
+        await handsRef.current.close();
+      } catch (e) {
+        console.warn("Hands close error:", e);
+      }
+      handsRef.current = null;
+    }
+  }, []);
 
-//         const dataAux = landmarks.flatMap((lm) => [lm.x - xMin, lm.y - yMin]);
+  const loadMediaPipeScripts = useCallback(async () => {
+    await loadScript(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.min.js"
+    );
+    await loadScript(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+    );
+  }, []);
 
-//         if (dataAux.length === DATA_AUX_SIZE) {
-//           const prediction = await classifySign(dataAux);
-//           setPrediction(prediction);
-//         }
+  const startTracking = useCallback(async () => {
+    await cleanup();
 
-//         if (canvasRef.current) {
-//           const canvasCtx = canvasRef.current.getContext("2d");
-//           if (results.image && canvasCtx) {
-//             canvasCtx.clearRect(
-//               0,
-//               0,
-//               canvasRef.current.width,
-//               canvasRef.current.height
-//             );
-//             canvasCtx.drawImage(
-//               results.image,
-//               0,
-//               0,
-//               canvasRef.current.width,
-//               canvasRef.current.height
-//             );
+    const hands = new window.Hands({
+      locateFile: (file: string) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+    });
 
-//             for (const landmark of landmarks) {
-//               canvasCtx.beginPath();
-//               canvasCtx.arc(
-//                 landmark.x * canvasRef.current.width,
-//                 landmark.y * canvasRef.current.height,
-//                 5,
-//                 0,
-//                 2 * Math.PI
-//               );
-//               canvasCtx.fillStyle = "red";
-//               canvasCtx.fill();
-//             }
-//           }
-//         }
-//       });
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.5,
+    });
 
-//       if (videoRef.current && videoRef.current) {
-//         const camera = new Camera(videoRef.current, {
-//           onFrame: async () =>
-//             await hands.send({
-//               image: videoRef.current as HTMLVideoElement,
-//             }),
-//           width: W,
-//           height: H,
-//         });
-//         camera.start();
-//       }
-//     }, [mediaStream]);
+    hands.onResults(async (results: any) => {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      if (!canvas || !video) return;
 
-//     return (
-//       <div>
-//         {/* <Webcam
-//           ref={videoRef}
-//           width={W}
-//           height={H}
-//           style={{ display: "none" }}
-//         /> */}
-//         {/* <video ref={videoRef} /> */}
-//         <canvas
-//           ref={canvasRef}
-//           width={W}
-//           height={H}
-//           // style={{ position: "absolute" }}
-//         />
-//         {!mediaStream ? (
-//           <Button onClick={startWebcam}>Start Webcam</Button>
-//         ) : (
-//           <Button onClick={stopWebcam}>Stop Webcam</Button>
-//         )}
-//         <h2 className="text-2xl mt-2">Prediction: {prediction}</h2>
-//       </div>
-//     );
-//   };
-//   useEffect(() => {
-//     if (canvasRef.current && videoRef.current) {
-//       const video = videoRef.current;
-//       const canvas = canvasRef.current;
-//       const context = canvasRef.current.getContext("2d");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-//       // Set canvas dimensions to match video stream
-//       if (context && video.videoWidth && video.videoHeight) {
-//         canvas.width = video.videoWidth;
-//         canvas.height = video.videoHeight;
-//         // Draw video frame onto canvas
-//         context.save();
-//         context.scale(-1, 1); // Flip horizontally
-//         context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-//         context.restore();
-//       }
-//     }
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
-//     const hands = new Hands({
-//       locateFile: (file) =>
-//         `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-//     });
+      let data_aux: number[] = [];
+      let x_: number[] = [];
+      let y_: number[] = [];
 
-//     hands.setOptions({
-//       maxNumHands: 1,
-//       modelComplexity: 1,
-//       minDetectionConfidence: 0.7,
-//       minTrackingConfidence: 0.5,
-//     });
+      if (results.multiHandLandmarks) {
+        for (const landmarks of results.multiHandLandmarks) {
+          window.drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {
+            color: "#0f0",
+            lineWidth: 2,
+          });
+          window.drawLandmarks(ctx, landmarks, { color: "#f00", lineWidth: 1 });
 
-//     hands.onResults(async (results) => {
-//       const landmarks = results.multiHandLandmarks?.[0];
-//       if (!landmarks) return;
+          for (const landmark of landmarks) {
+            const x = landmark.x;
+            const y = landmark.y;
+            x_.push(x);
+            y_.push(y);
+          }
 
-//       const xVals = landmarks.map((lm) => lm.x);
-//       const yVals = landmarks.map((lm) => lm.y);
-//       const xMin = Math.min(...xVals);
-//       const yMin = Math.min(...yVals);
+          for (const landmark of landmarks) {
+            const x = landmark.x;
+            const y = landmark.y;
+            data_aux.push(x - Math.min(...x_));
+            data_aux.push(y - Math.min(...y_));
+          }
+        }
+      }
 
-//       const dataAux = landmarks.flatMap((lm) => [lm.x - xMin, lm.y - yMin]);
+      // const x1 = Math.min(...x_) * W - 10;
+      // const y1 = Math.min(...y_) * H - 10;
 
-//       if (dataAux.length === DATA_AUX_SIZE) {
-//         const prediction = await classifySign(dataAux);
-//         setPrediction(prediction);
-//       }
-//     });
-//   }, []);
+      // const x2 = Math.max(...x_) * W - 10;
+      // const y2 = Math.max(...y_) * H - 10;
 
-//   const captureImage = () => {
-//     if (canvasRef.current && videoRef.current) {
-//       const video = videoRef.current;
-//       const canvas = canvasRef.current;
-//       const context = canvasRef.current.getContext("2d");
+      if (data_aux.length === DATA_AUX_SIZE) {
+        const prediction = await classifySign(data_aux);
+        setPrediction(prediction);
+      }
 
-//       // Set canvas dimensions to match video stream
-//       if (context && video.videoWidth && video.videoHeight) {
-//         canvas.width = video.videoWidth;
-//         canvas.height = video.videoHeight;
-//         // Draw video frame onto canvas
-//         context.save();
-//         context.scale(-1, 1); // Flip horizontally
-//         context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-//         context.restore();
-//         // Get image data URL from canvas
-//         // setCapturedImage(canvas.toDataURL("image/png"));
-//       }
-//     }
-//   };
+      // ctx.strokeStyle = "black";
+      // ctx.lineWidth = 4;
+      // ctx.strokeRect(x1, y1, W, H);
 
-//   // const resetState = () => {
-//   //   stopWebcam();
-//   //   setCapturedImage(null);
-//   // };
+      // ctx.font = "bold 26px Arial";
+      // ctx.fillStyle = "black";
+      // ctx.textBaseline = "bottom";
+      // ctx.fillText(prediction, x1, y1 - 10);
+    });
 
-//   return (
-//     <div className="webcam-container flex flex-col items-center justify-center">
-//       <video ref={videoRef} autoPlay muted className="webcam-video" />
-//       <canvas ref={canvasRef} className="webcam-canvas" />
-//       {!mediaStream ? (
-//         <Button onClick={startWebcam} variant="contained" color="primary">
-//           Start Webcam
-//         </Button>
-//       ) : (
-//         <Button onClick={stopWebcam} variant="contained" color="secondary">
-//           Stop Webcam
-//         </Button>
-//       )}
-//       <p>{prediction ? prediction : "Try yourself!"}</p>
-//     </div>
-//   );
-// };
+    handsRef.current = hands;
 
-// export default SignDetector;
+    const processFrame = async () => {
+      if (!videoRef.current || !handsRef.current) return;
+      if (handsRef.current.send) {
+        try {
+          await handsRef.current.send({ image: videoRef.current });
+        } catch (e) {
+          console.warn("Hands send error:", e);
+        }
+      }
+      rafRef.current = requestAnimationFrame(processFrame);
+    };
+
+    processFrame();
+  }, [cleanup]);
+
+  useEffect(() => {
+    loadMediaPipeScripts();
+
+    return () => {
+      cleanup();
+      stopCamera();
+    };
+  }, [loadMediaPipeScripts, startCamera, startTracking, cleanup, stopCamera]);
+
+  return (
+    <div className="webcam-container flex flex-col items-center justify-center">
+      <video
+        ref={videoRef}
+        width={W}
+        height={H}
+        playsInline
+        muted
+        className="webcam-video"
+      />
+      <canvas ref={canvasRef} width={W} height={H} className="webcam-canvas" />
+      {!streaming ? (
+        <button onClick={startCamera} disabled={streaming}>
+          Start Camera
+        </button>
+      ) : (
+        <button onClick={stopCamera} disabled={!streaming}>
+          Stop Camera
+        </button>
+      )}
+      <h2>{prediction}</h2>
+    </div>
+  );
+};
+
+export default SignDetector;

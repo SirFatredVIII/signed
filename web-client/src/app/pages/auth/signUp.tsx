@@ -84,14 +84,7 @@ export const SignUp = () => {
     if (triedSignUp) {
             let errorFound = false;
 
-        const newForms: { 
-            type: "text" | "email" | "password", 
-            label: string, 
-            value: string, 
-            handler: (_: BaseSyntheticEvent) => void,
-            errorCondition: () => boolean, 
-            errorMessage: string,
-            error: boolean}[] = []
+        const newForms: IForm[] = []
 
         allForms.forEach((form) => {
             if (form.errorCondition()) {
@@ -113,7 +106,7 @@ export const SignUp = () => {
      * Event handler designed to renavigate to the sign in page.
      */
     const handleSignIn = () => {
-        setState({...state, currentPage: "signIn"});
+        setState({...state, currentPage: "signin"});
     }
 
     /**
@@ -144,7 +137,7 @@ export const SignUp = () => {
                 RetrieveHighestId().then((highestId) => {
                     CreateNewUser(username, highestId, password, email).then(() => {
                         IncrementHighestId(highestId).then(() => {
-                            setState({...state, currentPage: "signIn"});
+                            setState({...state, currentPage: "signin"});
                     })
                 })
               })

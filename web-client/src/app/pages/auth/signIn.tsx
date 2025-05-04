@@ -6,6 +6,7 @@ import { RetrieveUser } from "@/app/accessors/users.accessor";
 import { hashSync } from "bcrypt-ts";
 import { secret } from "./secret_salt";
 import { IForm } from "./signUp";
+import { User } from "@/app/types/user";
 
 /**
  * Simple sign in component used to sign in a user to our service using their firebase credentials.
@@ -61,9 +62,18 @@ export const SignIn = () => {
                 raiseError(true);
             } else {
                 raiseError(false);
-                setState({...state, currentPage: "practice", currentUser: user.email});
+                setState({...state, currentPage: "learn", currentUser: user as User});
             }
         });
+    }
+
+    /**
+     * TODO: Delete this function. This is used to quickly log on as Drew.
+     */
+    const handleDevTools = () => {
+        RetrieveUser("superdrew12@gmail.com").then((user) => {
+            setState({...state, currentPage: "learn", currentUser: user as User});
+        })
     }
 
     // if all forms are filled out, feel free to submit the form. or at least try.
@@ -90,7 +100,8 @@ export const SignIn = () => {
                 </div>
             </div>
             <div className="grid justify-center mb-5 w-10vw ">
-                <div className="text-signed-blue italic font-bold hover:underline hover:cursor-pointer" onClick={handleSignUp}>I want to sign up...</div>
+                <div className="text-signed-blue italic font-bold hover:underline hover:cursor-pointer text-center" onClick={handleSignUp}>I want to sign up...</div>
+                <div className="text-white italic font-bold hover:underline hover:cursor-pointer hover:text-signed-blue text-center" onClick={handleDevTools}>Dev tools (sign in as Drew)...</div>
             </div>
         </div>
     )

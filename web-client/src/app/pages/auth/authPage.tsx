@@ -12,7 +12,7 @@ export const AuthenticationPage = () => {
 
     return (
         <div>
-            <div className={"columns-2 gap-0 select-none"}>
+            <div className={"columns-2 gap-0 select-none -mt-15"}>
                 {/* left-hand side of the screen, deals with signing in / signing up */}
                 <div className="h-screen">
                     {

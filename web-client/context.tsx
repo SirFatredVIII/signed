@@ -1,14 +1,20 @@
+import { User } from "@/app/types/user";
+import { Module } from "@/app/types/module";
 import React, { Dispatch, SetStateAction } from "react";
 
 interface ClientState {
-  currentPage: string;
-  currentUser: string;
-}
+    currentPage: string;
+    currentUser: User | "na";
+    currentModule: Module | "na";
+    modulePanelOpen: boolean;
+};
 
 const initialState: ClientState = {
-  currentPage: "practice",
-  currentUser: "na",
-};
+    currentPage: "signin",
+    currentUser: "na",
+    currentModule: "na",
+    modulePanelOpen: false
+}
 
 interface IStateContext {
   state: ClientState;

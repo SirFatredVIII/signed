@@ -1,14 +1,10 @@
 import { Button } from "@mui/material";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction, useContext, useState } from "react";
+import { StateContext } from "../../../../context";
 
-interface HomePageProps {
-  setPage: Dispatch<SetStateAction<string>>;
-}
+export const HomePage = () => {
 
-export const HomePage: React.FC<HomePageProps> = ({ setPage }) => {
-  const onClick = () => {
-    setPage("practice");
-  };
+  const [state, setState] = useState(useContext(StateContext).state);
 
   return (
     <>
@@ -20,7 +16,7 @@ export const HomePage: React.FC<HomePageProps> = ({ setPage }) => {
         SignEd
       </h1>
       <div className="w-full flex justify-center pt-10">
-        <Button variant="contained" color="primary" onClick={onClick}>
+        <Button variant="contained" color="primary" onClick={() => setState({...state, currentPage: "practice"})}>
           <p className="lowercase italic">Experience the signs...</p>
         </Button>
       </div>

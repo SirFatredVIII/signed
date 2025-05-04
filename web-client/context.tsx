@@ -7,7 +7,7 @@ interface ClientState {
     currentUser: User | "na";
     currentModule: Module | "na";
     modulePanelOpen: boolean;
-}
+};
 
 const initialState: ClientState = {
     currentPage: "signin",
@@ -17,13 +17,11 @@ const initialState: ClientState = {
 }
 
 interface IStateContext {
-    state: ClientState
-    setState: Dispatch<SetStateAction<ClientState>>
+  state: ClientState;
+  setState: Dispatch<SetStateAction<ClientState>>;
 }
 
-export const StateContext = React.createContext<IStateContext>(
-    {
-        state: initialState,
-        setState: () => {}
-    }
-);
+export const StateContext = React.createContext<IStateContext>({
+  state: initialState,
+  setState: () => {},
+});

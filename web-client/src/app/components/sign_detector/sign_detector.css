@@ -1,0 +1,13 @@
+.webcam-container {
+    position: relative;
+    margin: 0 auto;
+}
+
+.webcam-video {
+    display: none;
+}
+
+.webcam-canvas {
+    border-radius: 10px;
+    transform: scaleX(-1);
+}

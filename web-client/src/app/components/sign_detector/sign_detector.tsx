@@ -65,12 +65,15 @@ const SignDetector: React.FC = () => {
   const handsRef = useRef<any>(null);
   const rafRef = useRef<number | null>(null);
   const [streaming, setStreaming] = useState(false);
+  const [handDetected, setHandDetected] = useState(false);
   const [prediction, setPrediction] = useState<string>("");
 
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       if (videoRef.current) {
+        videoRef.current.width = W;
+        videoRef.current.height = H;
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
         setStreaming(true);
@@ -88,7 +91,7 @@ const SignDetector: React.FC = () => {
       setStreaming(false);
     }
     canvasRef.current?.getContext("2d")?.clearRect(0, 0, W, H);
-    setPrediction("");
+    setHandDetected(false);
   }, []);
 
   const cleanup = useCallback(async () => {
@@ -148,7 +151,8 @@ const SignDetector: React.FC = () => {
       let x_: number[] = [];
       let y_: number[] = [];
 
-      if (results.multiHandLandmarks) {
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        setHandDetected(true);
         for (const landmarks of results.multiHandLandmarks) {
           window.drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {
             color: "#0f0",
@@ -170,27 +174,14 @@ const SignDetector: React.FC = () => {
             data_aux.push(y - Math.min(...y_));
           }
         }
+      } else {
+        setHandDetected(false);
       }
-
-      // const x1 = Math.min(...x_) * W - 10;
-      // const y1 = Math.min(...y_) * H - 10;
-
-      // const x2 = Math.max(...x_) * W - 10;
-      // const y2 = Math.max(...y_) * H - 10;
 
       if (data_aux.length === DATA_AUX_SIZE) {
         const prediction = await classifySign(data_aux);
         setPrediction(prediction);
       }
-
-      // ctx.strokeStyle = "black";
-      // ctx.lineWidth = 4;
-      // ctx.strokeRect(x1, y1, W, H);
-
-      // ctx.font = "bold 26px Arial";
-      // ctx.fillStyle = "black";
-      // ctx.textBaseline = "bottom";
-      // ctx.fillText(prediction, x1, y1 - 10);
     });
 
     handsRef.current = hands;
@@ -239,7 +230,7 @@ const SignDetector: React.FC = () => {
           Stop Camera
         </button>
       )}
-      <h2>{prediction}</h2>
+      <h2>{handDetected && prediction}</h2>
     </div>
   );
 };

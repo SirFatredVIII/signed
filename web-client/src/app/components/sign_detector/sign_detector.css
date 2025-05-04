@@ -1,7 +1,5 @@
 .webcam-container {
     position: relative;
-    width: 100%;
-    max-width: 400px;
     margin: 0 auto;
 }
 
@@ -10,7 +8,6 @@
 }
 
 .webcam-canvas {
-    width: 100%;
     border-radius: 10px;
     transform: scaleX(-1);
 }

@@ -14,7 +14,7 @@ from typing import List
 # model = tf.keras.models.load_model('app/keras_classifier/sign_language_model.keras')
 model_dict = pickle.load(open('app/sklearn_classifier/model.p', 'rb'))
 model = model_dict['model']
-labels_dict = {0: 'A', 1: 'B', 2: 'C'}
+labels_dict = dict(enumerate(list("ABCDEFGHIKLMNOPQRSTUVWXY")))
 
 app = FastAPI()
 
@@ -35,7 +35,8 @@ class LandmarkRequest(BaseModel):
 async def classify(req: LandmarkRequest):
     print("Received landmarks:", req.landmarks)
     prediction = model.predict([np.asarray(req.landmarks)])
-    return {"letter": labels_dict[int(prediction[0])]}
+    letter = labels_dict[int(prediction[0])]
+    return {"letter": letter}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

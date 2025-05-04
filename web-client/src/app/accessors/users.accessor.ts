@@ -3,8 +3,9 @@ import { config } from "../../../configuration";
 import { hashSync } from "bcrypt-ts";
 import { secret } from "../pages/auth/secret_salt";
 import { User, UserHistory } from "../types/user";
-import { RetrieveLessonById } from "./lessons.accessor";
+import { RetrieveLessonById, RetrieveLessonsByManyId } from "./lessons.accessor";
 import { RetrieveStageById } from "./stages.accessor";
+import { RetrieveModuleById } from "./modules.accessor";
 
 /**
  * Used to hash the password according to the bcrypt standard. Requires a secret
@@ -52,9 +53,10 @@ export const CreateNewUser = async (username: string, newId: number, password: s
         type: "customer",
         avatar: "na",
         history: {
-            modules_started: [-1],
-            modules_finished: [-1],
-            modules_mastered: [-1],
+            lessons_progress: [],
+            modules_started: [],
+            modules_finished: [],
+            modules_mastered: [],
             total_learn_time: 0,
             total_practice_time: 0
         },
@@ -107,6 +109,7 @@ export const CompleteLesson = async (userid: number, lessonid: number) => {
         if (lesson.lessonid === lessonid) {
             lessonMatched = true;
         }
+        return lessonMatched;
     })[0]
 
     let otherLessons = currentLessonsProgress.filter((lesson) => {

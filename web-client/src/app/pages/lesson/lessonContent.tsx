@@ -1,4 +1,4 @@
-import Webcam from "@/app/components/webcam/webcam";
+import SignDetector from "@/app/components/sign_detector/sign_detector";
 import { Stage } from "@/app/types/lessons";
 import Image from "next/image"
 
@@ -21,7 +21,7 @@ export const LessonContent: React.FC<LessonContent> = ({stage, onComplete}) => {
                     <Image src={stage.src} alt={"image for " + stage.title} height={250} width={250} priority={true} className="w-1/5" draggable={false}/>
                 }
                 {stage.type === "practice" &&
-                    <Webcam/>
+                    <SignDetector/>
                 }
             </div>            
             <div className="flex justify-center mt-20 text-xl italic">

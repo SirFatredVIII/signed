@@ -59,9 +59,16 @@ const DATA_AUX_SIZE = 42;
 const W = 640;
 const H = 480;
 
-const SignDetector: React.FC = () => {
+interface SignDetectorInterface {
+  registerStopCamera?: (callback: () => void) => void;
+}
+
+const SignDetector: React.FC<SignDetectorInterface> = ({
+  registerStopCamera,
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const handsRef = useRef<any>(null);
   const rafRef = useRef<number | null>(null);
   const [streaming, setStreaming] = useState(false);
@@ -71,25 +78,43 @@ const SignDetector: React.FC = () => {
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
+      streamRef.current = stream;
+
+      if (!videoRef.current) return;
+      videoRef.current.srcObject = stream;
+
+      const handleLoadedMetadata = async () => {
+        if (!videoRef.current) return;
         videoRef.current.width = W;
         videoRef.current.height = H;
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setStreaming(true);
-      }
+
+        try {
+          await videoRef.current.play();
+          setStreaming(true);
+          startTracking();
+        } catch (playErr) {
+          console.error("Error playing video:", playErr);
+        }
+      };
+
+      videoRef.current.onloadedmetadata = handleLoadedMetadata;
     } catch (err) {
       console.error("Failed to access camera:", err);
     }
-    startTracking();
   }, []);
 
   const stopCamera = useCallback(() => {
-    if (videoRef.current?.srcObject instanceof MediaStream) {
-      videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+    cleanup();
+    if (videoRef.current) {
+      videoRef.current.pause();
       videoRef.current.srcObject = null;
-      setStreaming(false);
     }
+
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+
+    setStreaming(false);
+
     canvasRef.current?.getContext("2d")?.clearRect(0, 0, W, H);
     setHandDetected(false);
   }, []);
@@ -202,10 +227,17 @@ const SignDetector: React.FC = () => {
   }, [cleanup]);
 
   useEffect(() => {
-    loadMediaPipeScripts();
+    const init = async () => {
+      await loadMediaPipeScripts();
+      if (registerStopCamera !== undefined) {
+        startCamera();
+        registerStopCamera(stopCamera);
+      }
+    };
+
+    init();
 
     return () => {
-      cleanup();
       stopCamera();
     };
   }, [loadMediaPipeScripts, startCamera, startTracking, cleanup, stopCamera]);
@@ -221,15 +253,16 @@ const SignDetector: React.FC = () => {
         className="webcam-video"
       />
       <canvas ref={canvasRef} width={W} height={H} className="webcam-canvas" />
-      {!streaming ? (
-        <button onClick={startCamera} disabled={streaming}>
-          Start Camera
-        </button>
-      ) : (
-        <button onClick={stopCamera} disabled={!streaming}>
-          Stop Camera
-        </button>
-      )}
+      {registerStopCamera === undefined &&
+        (!streaming ? (
+          <button onClick={startCamera} disabled={streaming}>
+            Start Camera
+          </button>
+        ) : (
+          <button onClick={stopCamera} disabled={!streaming}>
+            Stop Camera
+          </button>
+        ))}
       <h2>{handDetected && prediction}</h2>
     </div>
   );

@@ -18,6 +18,11 @@ export const LessonContent: React.FC<LessonContent> = ({
   setStageCompleted,
   registerStopCamera,
 }) => {
+  const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  const expectedSigns: string[] = [];
+  stage.sign.forEach((s) => expectedSigns.push(ALPHABET[s]));
+
   return (
     <div className="w-full select-none mb-10">
       <h2 className="flex justify-center mt-20 text-3xl font-bold">
@@ -38,7 +43,7 @@ export const LessonContent: React.FC<LessonContent> = ({
         {stage.type === "practice" && (
           <SignDetector
             key={stage.title}
-            expectedSigns={stage.sign}
+            expectedSigns={expectedSigns}
             stageCompleted={stageCompleted}
             setStageCompleted={setStageCompleted}
             registerStopCamera={registerStopCamera}

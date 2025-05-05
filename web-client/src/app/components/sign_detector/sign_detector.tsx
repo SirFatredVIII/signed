@@ -31,6 +31,22 @@ const loadScript = (src: string): Promise<void> =>
     document.body.appendChild(script);
   });
 
+const areEqual = (
+  arr1: string[] | null | undefined,
+  arr2: string[] | null | undefined
+) => {
+  if (!arr1 || !arr2) return false;
+  if (arr1.length !== arr2.length) {
+    return false;
+  }
+  for (let i = 0; i < arr1.length; i++) {
+    if (arr1[i] !== arr2[i]) {
+      return false;
+    }
+  }
+  return true;
+};
+
 const HAND_CONNECTIONS = [
   [0, 1],
   [1, 2],
@@ -55,15 +71,13 @@ const HAND_CONNECTIONS = [
   [19, 20], // Pinky & Palm base
 ];
 
-const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
 const DATA_AUX_SIZE = 42;
 
 const W = 640;
 const H = 480;
 
 interface SignDetectorInterface {
-  expectedSigns?: number[];
+  expectedSigns?: string[];
   stageCompleted?: boolean;
   setStageCompleted?: (stageCompleted: boolean) => void;
   registerStopCamera?: (callback: () => void) => void;
@@ -89,11 +103,13 @@ const SignDetector: React.FC<SignDetectorInterface> = ({
   const countdownStart = 3;
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [signIndex, setSignIndex] = useState<number | null>(0);
-  const [confirmed, setConfirmed] = useState(false);
-  const [lastConfirmedSign, setLastConfirmedSign] = useState<number | null>(
-    null
-  );
+  const [completedSigns, setCompletedSigns] = useState<string[]>([]);
+  const [currentSignIndex, setCurrentSignIndex] = useState(0);
+  const currentSignIndexRef = useRef(0);
+
+  useEffect(() => {
+    currentSignIndexRef.current = currentSignIndex;
+  }, [currentSignIndex]);
 
   const startCamera = useCallback(async () => {
     try {
@@ -228,13 +244,13 @@ const SignDetector: React.FC<SignDetectorInterface> = ({
       }
 
       if (data_aux.length === DATA_AUX_SIZE) {
+        console.log("index: " + currentSignIndexRef.current);
         const prediction = await classifySign(data_aux);
         setPrediction(prediction);
 
         if (
           expectedSigns !== undefined &&
-          signIndex !== null &&
-          ALPHABET[expectedSigns[signIndex]] === prediction
+          prediction === expectedSigns[currentSignIndexRef.current / 2]
         ) {
           setIsHolding(true);
         } else {
@@ -268,7 +284,8 @@ const SignDetector: React.FC<SignDetectorInterface> = ({
           if (prev === null) return null;
           if (prev <= 1) {
             clearInterval(countdownRef.current!);
-            setConfirmed(true);
+            setCompletedSigns([...completedSigns, prediction]);
+            setCurrentSignIndex((prev) => prev + 1);
             return null;
           }
           return prev - 1;
@@ -285,21 +302,17 @@ const SignDetector: React.FC<SignDetectorInterface> = ({
   }, [isHolding]);
 
   useEffect(() => {
-    console.log("signIndex: " + signIndex);
-    if (
-      confirmed &&
-      expectedSigns &&
-      signIndex !== null &&
-      prediction === ALPHABET[expectedSigns[signIndex]]
-    ) {
-      if (signIndex >= expectedSigns.length - 1) {
-        setStageCompleted?.(true);
-      } else {
-        setSignIndex((prev) => (prev === null ? null : prev + 1));
-      }
-      setConfirmed(false);
+    console.log(
+      "completed vs. expected",
+      completedSigns,
+      expectedSigns,
+      currentSignIndex,
+      areEqual(completedSigns, expectedSigns!)
+    );
+    if (areEqual(completedSigns, expectedSigns) && setStageCompleted) {
+      setStageCompleted(true);
     }
-  }, [confirmed]);
+  }, [completedSigns]);
 
   useEffect(() => {
     const init = async () => {

@@ -1,10 +1,11 @@
 import SignDetector from "@/app/components/sign_detector/sign_detector";
 import { Stage } from "@/app/types/lessons";
 import Image from "next/image";
-import { useState } from "react";
 
 interface LessonContent {
   stage: Stage;
+  stageCompleted: boolean;
+  setStageCompleted: (stageCompleted: boolean) => void;
   registerStopCamera?: (callback: () => void) => void;
 }
 
@@ -13,6 +14,8 @@ interface LessonContent {
  */
 export const LessonContent: React.FC<LessonContent> = ({
   stage,
+  stageCompleted,
+  setStageCompleted,
   registerStopCamera,
 }) => {
   return (
@@ -35,12 +38,17 @@ export const LessonContent: React.FC<LessonContent> = ({
         {stage.type === "practice" && (
           <SignDetector
             key={stage.title}
+            expectedSigns={stage.sign}
+            stageCompleted={stageCompleted}
+            setStageCompleted={setStageCompleted}
             registerStopCamera={registerStopCamera}
           />
         )}
       </div>
       <div className="flex justify-center mt-20 text-xl italic">
-        {stage.description}
+        {stageCompleted && stage.type === "practice"
+          ? "Excellent! Advance when you are ready!"
+          : stage.description}
       </div>
     </div>
   );

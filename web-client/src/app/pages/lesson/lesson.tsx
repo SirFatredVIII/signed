@@ -25,6 +25,7 @@ import {
   RetrieveUser,
 } from "@/app/accessors/users.accessor";
 import { InputButton } from "@/app/components/input/button";
+import { navigateHome, navigateLesson, navigatePractice } from "../utils/nav";
 
 export interface LessonStages {
   id: number;
@@ -41,6 +42,7 @@ export const LessonPage = () => {
   const [stagesCompleted, setStagesCompleted] = useState<Map<number, number[]>>(
     new Map()
   );
+  const [stageCompleted, setStageCompleted] = useState(false);
   const stopCameraRef = useRef<() => void>(() => {});
 
   useEffect(() => {
@@ -136,20 +138,8 @@ export const LessonPage = () => {
     })[0];
   }
 
-  const navigateHome = () => {
-    setState({
-      ...state,
-      currentPage: "learn",
-      currentModule: "na",
-      modulePanelOpen: false,
-    });
-  };
-
-  const navigatePractice = () => {
-    setState({ ...state, currentPage: "practice" });
-  };
-
   const advanceToNextStage = (e: BaseSyntheticEvent) => {
+    setStageCompleted(false);
     if (stopCameraRef.current) {
       stopCameraRef.current();
     }
@@ -175,6 +165,7 @@ export const LessonPage = () => {
   };
 
   const restartLesson = (e: BaseSyntheticEvent) => {
+    setStageCompleted(false);
     if (stopCameraRef.current) {
       stopCameraRef.current();
     }
@@ -205,7 +196,7 @@ export const LessonPage = () => {
           <SidebarItem
             label="Home"
             active={false}
-            action={navigateHome}
+            action={() => navigateHome({ state, setState })}
             icon={faHouse}
             type="actionItem"
             completed={false}
@@ -213,7 +204,7 @@ export const LessonPage = () => {
           <SidebarItem
             label="Learn"
             active={true}
-            action={() => {}}
+            action={() => navigateLesson({ state, setState })}
             icon={faBookOpenReader}
             type="actionItem"
             completed={false}
@@ -221,7 +212,7 @@ export const LessonPage = () => {
           <SidebarItem
             label="Practice"
             active={false}
-            action={navigatePractice}
+            action={() => navigatePractice({ state, setState })}
             icon={faBookOpenReader}
             type="actionItem"
             completed={false}
@@ -258,6 +249,8 @@ export const LessonPage = () => {
         {stageToComplete !== undefined && (
           <LessonContent
             stage={stageToComplete}
+            stageCompleted={stageCompleted}
+            setStageCompleted={setStageCompleted}
             registerStopCamera={(cb) => (stopCameraRef.current = cb)}
           />
         )}
@@ -266,10 +259,10 @@ export const LessonPage = () => {
             color={"green"}
             label={"Advance..."}
             callback={advanceToNextStage}
-            disabled={false}
+            disabled={stageToComplete?.type === "practice" && !stageCompleted}
           />
           <InputButton
-            color={"teal"}
+            color={"red"}
             label={"Restart lesson..."}
             callback={restartLesson}
             disabled={false}

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import "./sign_detector.css";
 import { classifySign } from "@/app/actions/model.action";
+import { InputButton } from "../input/button";
 
 declare global {
   interface Window {
@@ -54,16 +55,24 @@ const HAND_CONNECTIONS = [
   [19, 20], // Pinky & Palm base
 ];
 
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
 const DATA_AUX_SIZE = 42;
 
 const W = 640;
 const H = 480;
 
 interface SignDetectorInterface {
+  expectedSigns?: number[];
+  stageCompleted?: boolean;
+  setStageCompleted?: (stageCompleted: boolean) => void;
   registerStopCamera?: (callback: () => void) => void;
 }
 
 const SignDetector: React.FC<SignDetectorInterface> = ({
+  expectedSigns,
+  stageCompleted = false,
+  setStageCompleted,
   registerStopCamera,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -74,6 +83,17 @@ const SignDetector: React.FC<SignDetectorInterface> = ({
   const [streaming, setStreaming] = useState(false);
   const [handDetected, setHandDetected] = useState(false);
   const [prediction, setPrediction] = useState<string>("");
+
+  const [isHolding, setIsHolding] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownStart = 3;
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [signIndex, setSignIndex] = useState<number | null>(0);
+  const [confirmed, setConfirmed] = useState(false);
+  const [lastConfirmedSign, setLastConfirmedSign] = useState<number | null>(
+    null
+  );
 
   const startCamera = useCallback(async () => {
     try {
@@ -176,7 +196,11 @@ const SignDetector: React.FC<SignDetectorInterface> = ({
       let x_: number[] = [];
       let y_: number[] = [];
 
-      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+      if (
+        results.multiHandLandmarks &&
+        results.multiHandLandmarks.length > 0 &&
+        results.multiHandedness[0].label === "Left"
+      ) {
         setHandDetected(true);
         for (const landmarks of results.multiHandLandmarks) {
           window.drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {
@@ -206,6 +230,16 @@ const SignDetector: React.FC<SignDetectorInterface> = ({
       if (data_aux.length === DATA_AUX_SIZE) {
         const prediction = await classifySign(data_aux);
         setPrediction(prediction);
+
+        if (
+          expectedSigns !== undefined &&
+          signIndex !== null &&
+          ALPHABET[expectedSigns[signIndex]] === prediction
+        ) {
+          setIsHolding(true);
+        } else {
+          setIsHolding(false);
+        }
       }
     });
 
@@ -223,8 +257,49 @@ const SignDetector: React.FC<SignDetectorInterface> = ({
       rafRef.current = requestAnimationFrame(processFrame);
     };
 
-    processFrame();
+    !stageCompleted && processFrame();
   }, [cleanup]);
+
+  useEffect(() => {
+    if (isHolding) {
+      setCountdown(countdownStart);
+      countdownRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev === null) return null;
+          if (prev <= 1) {
+            clearInterval(countdownRef.current!);
+            setConfirmed(true);
+            return null;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setCountdown(null);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    }
+
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [isHolding]);
+
+  useEffect(() => {
+    console.log("signIndex: " + signIndex);
+    if (
+      confirmed &&
+      expectedSigns &&
+      signIndex !== null &&
+      prediction === ALPHABET[expectedSigns[signIndex]]
+    ) {
+      if (signIndex >= expectedSigns.length - 1) {
+        setStageCompleted?.(true);
+      } else {
+        setSignIndex((prev) => (prev === null ? null : prev + 1));
+      }
+      setConfirmed(false);
+    }
+  }, [confirmed]);
 
   useEffect(() => {
     const init = async () => {
@@ -253,17 +328,40 @@ const SignDetector: React.FC<SignDetectorInterface> = ({
         className="webcam-video"
       />
       <canvas ref={canvasRef} width={W} height={H} className="webcam-canvas" />
-      {registerStopCamera === undefined &&
-        (!streaming ? (
-          <button onClick={startCamera} disabled={streaming}>
-            Start Camera
-          </button>
-        ) : (
-          <button onClick={stopCamera} disabled={!streaming}>
-            Stop Camera
-          </button>
-        ))}
-      <h2>{handDetected && prediction}</h2>
+      <p
+        className={
+          (handDetected ? "visible" : "invisible") +
+          " text-center text-2xl font-bold mt-4"
+        }
+      >
+        Letter detected: {prediction}
+      </p>
+      <p
+        className={
+          (countdown !== null && !stageCompleted ? "visible" : "invisible") +
+          " text-center text-2xl font-bold mt-4"
+        }
+      >
+        Hold for {countdown}...
+      </p>
+      <div className="flex gap-3 justify-center">
+        {registerStopCamera === undefined &&
+          (!streaming ? (
+            <InputButton
+              color={"green"}
+              label={"Start Camera"}
+              callback={startCamera}
+              disabled={streaming}
+            />
+          ) : (
+            <InputButton
+              color={"red"}
+              label={"Stop Camera"}
+              callback={stopCamera}
+              disabled={!streaming}
+            />
+          ))}
+      </div>
     </div>
   );
 };

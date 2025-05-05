@@ -136,7 +136,7 @@ export const SignUp = () => {
                 // we can move on to the sign in page.
                 RetrieveHighestId().then((highestId) => {
                     CreateNewUser(username, highestId, password, email).then(() => {
-                        IncrementHighestId(highestId).then(() => {
+                        IncrementHighestId(highestId + 1).then(() => {
                             setState({...state, currentPage: "signin"});
                     })
                 })

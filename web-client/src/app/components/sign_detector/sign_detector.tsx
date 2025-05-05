@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import "./sign_detector.css";
 import { classifySign } from "@/app/actions/model.action";
+import { InputButton } from "../input/button";
 
 declare global {
   interface Window {
@@ -29,6 +30,22 @@ const loadScript = (src: string): Promise<void> =>
     script.onerror = () => reject(new Error(`Failed to load: ${src}`));
     document.body.appendChild(script);
   });
+
+const areEqual = (
+  arr1: string[] | null | undefined,
+  arr2: string[] | null | undefined
+) => {
+  if (!arr1 || !arr2) return false;
+  if (arr1.length !== arr2.length) {
+    return false;
+  }
+  for (let i = 0; i < arr1.length; i++) {
+    if (arr1[i] !== arr2[i]) {
+      return false;
+    }
+  }
+  return true;
+};
 
 const HAND_CONNECTIONS = [
   [0, 1],
@@ -59,37 +76,81 @@ const DATA_AUX_SIZE = 42;
 const W = 640;
 const H = 480;
 
-const SignDetector: React.FC = () => {
+interface SignDetectorInterface {
+  expectedSigns?: string[];
+  stageCompleted?: boolean;
+  setStageCompleted?: (stageCompleted: boolean) => void;
+  registerStopCamera?: (callback: () => void) => void;
+}
+
+const SignDetector: React.FC<SignDetectorInterface> = ({
+  expectedSigns,
+  stageCompleted = false,
+  setStageCompleted,
+  registerStopCamera,
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const handsRef = useRef<any>(null);
   const rafRef = useRef<number | null>(null);
   const [streaming, setStreaming] = useState(false);
   const [handDetected, setHandDetected] = useState(false);
   const [prediction, setPrediction] = useState<string>("");
 
+  const [isHolding, setIsHolding] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownStart = 3;
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [completedSigns, setCompletedSigns] = useState<string[]>([]);
+  const [currentSignIndex, setCurrentSignIndex] = useState(0);
+  const currentSignIndexRef = useRef(0);
+
+  useEffect(() => {
+    currentSignIndexRef.current = currentSignIndex;
+  }, [currentSignIndex]);
+
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
+      streamRef.current = stream;
+
+      if (!videoRef.current) return;
+      videoRef.current.srcObject = stream;
+
+      const handleLoadedMetadata = async () => {
+        if (!videoRef.current) return;
         videoRef.current.width = W;
         videoRef.current.height = H;
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setStreaming(true);
-      }
+
+        try {
+          await videoRef.current.play();
+          setStreaming(true);
+          startTracking();
+        } catch (playErr) {
+          console.error("Error playing video:", playErr);
+        }
+      };
+
+      videoRef.current.onloadedmetadata = handleLoadedMetadata;
     } catch (err) {
       console.error("Failed to access camera:", err);
     }
-    startTracking();
   }, []);
 
   const stopCamera = useCallback(() => {
-    if (videoRef.current?.srcObject instanceof MediaStream) {
-      videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+    cleanup();
+    if (videoRef.current) {
+      videoRef.current.pause();
       videoRef.current.srcObject = null;
-      setStreaming(false);
     }
+
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+
+    setStreaming(false);
+
     canvasRef.current?.getContext("2d")?.clearRect(0, 0, W, H);
     setHandDetected(false);
   }, []);
@@ -151,7 +212,11 @@ const SignDetector: React.FC = () => {
       let x_: number[] = [];
       let y_: number[] = [];
 
-      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+      if (
+        results.multiHandLandmarks &&
+        results.multiHandLandmarks.length > 0 &&
+        results.multiHandedness[0].label === "Left"
+      ) {
         setHandDetected(true);
         for (const landmarks of results.multiHandLandmarks) {
           window.drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {
@@ -179,8 +244,18 @@ const SignDetector: React.FC = () => {
       }
 
       if (data_aux.length === DATA_AUX_SIZE) {
+        console.log("index: " + currentSignIndexRef.current);
         const prediction = await classifySign(data_aux);
         setPrediction(prediction);
+
+        if (
+          expectedSigns !== undefined &&
+          prediction === expectedSigns[currentSignIndexRef.current / 2]
+        ) {
+          setIsHolding(true);
+        } else {
+          setIsHolding(false);
+        }
       }
     });
 
@@ -198,14 +273,59 @@ const SignDetector: React.FC = () => {
       rafRef.current = requestAnimationFrame(processFrame);
     };
 
-    processFrame();
+    !stageCompleted && processFrame();
   }, [cleanup]);
 
   useEffect(() => {
-    loadMediaPipeScripts();
+    if (isHolding) {
+      setCountdown(countdownStart);
+      countdownRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev === null) return null;
+          if (prev <= 1) {
+            clearInterval(countdownRef.current!);
+            setCompletedSigns([...completedSigns, prediction]);
+            setCurrentSignIndex((prev) => prev + 1);
+            return null;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setCountdown(null);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    }
 
     return () => {
-      cleanup();
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [isHolding]);
+
+  useEffect(() => {
+    console.log(
+      "completed vs. expected",
+      completedSigns,
+      expectedSigns,
+      currentSignIndex,
+      areEqual(completedSigns, expectedSigns!)
+    );
+    if (areEqual(completedSigns, expectedSigns) && setStageCompleted) {
+      setStageCompleted(true);
+    }
+  }, [completedSigns]);
+
+  useEffect(() => {
+    const init = async () => {
+      await loadMediaPipeScripts();
+      if (registerStopCamera !== undefined) {
+        startCamera();
+        registerStopCamera(stopCamera);
+      }
+    };
+
+    init();
+
+    return () => {
       stopCamera();
     };
   }, [loadMediaPipeScripts, startCamera, startTracking, cleanup, stopCamera]);
@@ -221,16 +341,40 @@ const SignDetector: React.FC = () => {
         className="webcam-video"
       />
       <canvas ref={canvasRef} width={W} height={H} className="webcam-canvas" />
-      {!streaming ? (
-        <button onClick={startCamera} disabled={streaming}>
-          Start Camera
-        </button>
-      ) : (
-        <button onClick={stopCamera} disabled={!streaming}>
-          Stop Camera
-        </button>
-      )}
-      <h2>{handDetected && prediction}</h2>
+      <p
+        className={
+          (handDetected ? "visible" : "invisible") +
+          " text-center text-2xl font-bold mt-4"
+        }
+      >
+        Letter detected: {prediction}
+      </p>
+      <p
+        className={
+          (countdown !== null && !stageCompleted ? "visible" : "invisible") +
+          " text-center text-2xl font-bold mt-4"
+        }
+      >
+        Hold for {countdown}...
+      </p>
+      <div className="flex gap-3 justify-center">
+        {registerStopCamera === undefined &&
+          (!streaming ? (
+            <InputButton
+              color={"green"}
+              label={"Start Camera"}
+              callback={startCamera}
+              disabled={streaming}
+            />
+          ) : (
+            <InputButton
+              color={"red"}
+              label={"Stop Camera"}
+              callback={stopCamera}
+              disabled={!streaming}
+            />
+          ))}
+      </div>
     </div>
   );
 };

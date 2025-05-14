@@ -11,8 +11,7 @@ import pickle
 from pydantic import BaseModel
 from typing import List
 
-# model = tf.keras.models.load_model('app/keras_classifier/sign_language_model.keras')
-model_dict = pickle.load(open('app/sklearn_classifier/model.p', 'rb'))
+model_dict = pickle.load(open('app/model.p', 'rb'))
 model = model_dict['model']
 labels_dict = dict(enumerate(list("ABCDEFGHIKLMNOPQRSTUVWXY")))
 
